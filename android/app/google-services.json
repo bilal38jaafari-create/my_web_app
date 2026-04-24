@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "838641477113",
+    "project_id": "jaafari-guide-56f12",
+    "storage_bucket": "jaafari-guide-56f12.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:838641477113:android:678a55545302c0812e8928",
+        "android_client_info": {
+          "package_name": "com.example.my_web_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCuLeuLaSG1jhiGhx3wz3vbLQDHBr1VIDU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
