@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:file_picker/file_picker.dart';
 import 'dart:ui';
+import 'dart:io';
 import 'firebase_options.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -25,9 +28,11 @@ class S {
       'no_acc': 'تلميذ جديد؟ أنشئ حساباً',
       'pass_mismatch': 'كلمات المرور غير متطابقة!',
       'fill_fields': 'يرجى ملء جميع الحقول',
+      'wrong_auth': 'البريد الإلكتروني أو كلمة المرور غير صحيحة.',
+      'auth_error': 'حدث خطأ أثناء تسجيل الدخول. يرجى المحاولة لاحقاً.',
       'subjects': 'المواد الدراسية',
       'lesson': 'الدرس',
-      'edit_title': 'تعديل عنوان الدرس',
+      'edit_title': 'تعديل العنوان',
       'new_title': 'العنوان الجديد',
       'finish_lesson': 'إنهاء الدرس',
       'quiz_title': 'الاختبارات QCM',
@@ -55,14 +60,16 @@ class S {
       'correct_opt': 'الخيار الصحيح (1-4)',
       'save': 'حفظ',
       'cancel': 'إلغاء',
-      'add_content': 'إضافة محتوى للدرس',
+      'add_content': 'إضافة محتوى',
       'content_type': 'نوع المحتوى',
       'text_type': 'نص عادي',
-      'img_type': 'رابط صورة (URL)',
-      'vid_type': 'رابط فيديو (URL)',
-      'content': 'اكتب المحتوى أو الرابط هنا',
+      'file_type': 'رفع ملف (صورة، فيديو، PDF)',
+      'content': 'اكتب المحتوى هنا',
       'score': 'نتيجتك هي',
-      'watch_video': 'مشاهدة الفيديو',
+      'open_file': 'فتح الملف / مشاهدة المرفق',
+      'uploading': 'جاري الرفع...',
+      'exam_img': 'إضافة صورة للامتحان (مساعد)',
+      'delete': 'حذف',
     },
     'en': {
       'app_title': 'Jaafari Guide',
@@ -80,9 +87,11 @@ class S {
       'no_acc': 'New student? Sign Up',
       'pass_mismatch': 'Passwords do not match!',
       'fill_fields': 'Please fill all fields',
+      'wrong_auth': 'Incorrect email or password.',
+      'auth_error': 'An authentication error occurred. Please try again.',
       'subjects': 'Subjects',
       'lesson': 'Lesson',
-      'edit_title': 'Edit Lesson Title',
+      'edit_title': 'Edit Title',
       'new_title': 'New Title',
       'finish_lesson': 'Finish Lesson',
       'quiz_title': 'QCM Quizzes',
@@ -108,14 +117,16 @@ class S {
       'correct_opt': 'Correct Option (1-4)',
       'save': 'Save',
       'cancel': 'Cancel',
-      'add_content': 'Add Lesson Content',
+      'add_content': 'Add Content',
       'content_type': 'Content Type',
       'text_type': 'Text',
-      'img_type': 'Image URL',
-      'vid_type': 'Video URL',
-      'content': 'Enter content or link',
+      'file_type': 'Upload File (Image, Video, PDF)',
+      'content': 'Enter text here',
       'score': 'Your Score is',
-      'watch_video': 'Watch Video',
+      'open_file': 'Open File / View Attachment',
+      'uploading': 'Uploading...',
+      'exam_img': 'Add Exam Helper Image',
+      'delete': 'Delete',
     },
   };
   static String get(String key) =>
@@ -130,19 +141,6 @@ final ValueNotifier<Locale> localeNotifier = ValueNotifier(const Locale('ar'));
 bool isTeacherGlobal = false;
 String currentUserEmailGlobal = '';
 String currentUserNameGlobal = '';
-
-// --- هياكل البيانات ---
-class ContentBlock {
-  String type;
-  String data;
-  ContentBlock({required this.type, required this.data});
-}
-
-class MockDatabase {
-  static Map<String, String> customLessonTitles = {};
-  static Map<String, List<ContentBlock>> lessonContents = {};
-  static Map<String, List<Map<String, dynamic>>> quizzes = {};
-}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -188,7 +186,7 @@ class JaafariGuideApp extends StatelessWidget {
   }
 }
 
-// --- نظام توجيه الدخول وتحديد الأستاذ سرياً ---
+// --- نظام توجيه الدخول ---
 class AuthWrapper extends StatelessWidget {
   const AuthWrapper({super.key});
 
@@ -228,11 +226,11 @@ class UserDataFetcher extends StatelessWidget {
 
         currentUserEmailGlobal = FirebaseAuth.instance.currentUser?.email ?? '';
 
-        // --- تحديد الأستاذ هنا بناءً على الإيميل ---
+        // تحديد الأستاذ
         if (currentUserEmailGlobal == 'bilal38jaafari@gmail.com') {
-          isTeacherGlobal = true; // أنت الأستاذ!
+          isTeacherGlobal = true;
         } else {
-          isTeacherGlobal = false; // أي شخص آخر هو تلميذ
+          isTeacherGlobal = false;
         }
 
         if (snapshot.hasData && snapshot.data!.exists) {
@@ -249,7 +247,7 @@ class UserDataFetcher extends StatelessWidget {
   }
 }
 
-// --- 1. واجهة تسجيل الدخول الزجاجية (Apple Glassmorphism) واللوجو المينيمالي ---
+// --- 1. واجهة تسجيل الدخول ---
 class AppleGlassLoginScreen extends StatefulWidget {
   const AppleGlassLoginScreen({super.key});
   @override
@@ -302,7 +300,6 @@ class _AppleGlassLoginScreenState extends State<AppleGlassLoginScreen> {
         UserCredential cred = await FirebaseAuth.instance
             .createUserWithEmailAndPassword(email: email, password: pass);
 
-        // حفظ حساب جديد كتلميذ دائماً
         await FirebaseFirestore.instance
             .collection('users')
             .doc(cred.user!.uid)
@@ -320,13 +317,21 @@ class _AppleGlassLoginScreenState extends State<AppleGlassLoginScreen> {
         );
       }
     } on FirebaseAuthException catch (e) {
-      _showError(e.message ?? "حدث خطأ");
+      // إصلاح رسائل الخطأ لتكون مفهومة
+      if (e.code == 'user-not-found' ||
+          e.code == 'wrong-password' ||
+          e.code == 'invalid-credential') {
+        _showError(S.get('wrong_auth'));
+      } else {
+        _showError(S.get('auth_error'));
+      }
+    } catch (e) {
+      _showError(S.get('auth_error'));
     }
 
     if (mounted) setState(() => isLoading = false);
   }
 
-  // اللوجو المبرمج: قبعة التخرج مدمجة مع كتاب بستايل آبل النظيف
   Widget _buildMinimalistLogo() {
     return Container(
       width: 100,
@@ -368,7 +373,6 @@ class _AppleGlassLoginScreenState extends State<AppleGlassLoginScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          // الخلفية الداكنة الأنيقة بستايل نظام ماك
           Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
@@ -382,7 +386,6 @@ class _AppleGlassLoginScreenState extends State<AppleGlassLoginScreen> {
               ),
             ),
           ),
-          // الدوائر التجميلية في الخلفية
           Positioned(
             top: -50,
             left: -50,
@@ -405,15 +408,12 @@ class _AppleGlassLoginScreenState extends State<AppleGlassLoginScreen> {
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(30),
                 child: BackdropFilter(
-                  filter: ImageFilter.blur(
-                    sigmaX: 20,
-                    sigmaY: 20,
-                  ), // التأثير الزجاجي القوي
+                  filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
                   child: Container(
                     width: 350,
                     padding: const EdgeInsets.all(30),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.1), // شفافية زجاجية
+                      color: Colors.white.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(30),
                       border: Border.all(
                         color: Colors.white.withOpacity(0.2),
@@ -611,7 +611,6 @@ class _MainNavigationState extends State<MainNavigation> {
   }
 }
 
-// قائمة المواد
 class SubjectData {
   final String id;
   final String nameKey;
@@ -634,7 +633,7 @@ final List<SubjectData> appSubjects = [
   SubjectData("it", "it", Icons.computer, Colors.blueGrey),
 ];
 
-// --- 3. واجهة الدروس ---
+// --- 3. واجهة الدروس (الآن متصلة بـ Firestore) ---
 class LessonsGridPage extends StatelessWidget {
   const LessonsGridPage({super.key});
   @override
@@ -710,7 +709,7 @@ class SubjectLessonsPage extends StatefulWidget {
 }
 
 class _SubjectLessonsPageState extends State<SubjectLessonsPage> {
-  void _editLessonTitle(String lessonId, String currentTitle) {
+  void _editTitle(String docId, String currentTitle, String collectionPath) {
     final ctrl = TextEditingController(text: currentTitle);
     showDialog(
       context: context,
@@ -730,11 +729,14 @@ class _SubjectLessonsPageState extends State<SubjectLessonsPage> {
               backgroundColor: widget.subject.color,
               foregroundColor: Colors.white,
             ),
-            onPressed: () {
-              setState(
-                () => MockDatabase.customLessonTitles[lessonId] = ctrl.text,
-              );
-              Navigator.pop(context);
+            onPressed: () async {
+              if (ctrl.text.isNotEmpty) {
+                await FirebaseFirestore.instance
+                    .collection(collectionPath)
+                    .doc(docId)
+                    .set({'custom_title': ctrl.text}, SetOptions(merge: true));
+              }
+              if (mounted) Navigator.pop(context);
             },
             child: Text(S.get('save')),
           ),
@@ -751,54 +753,75 @@ class _SubjectLessonsPageState extends State<SubjectLessonsPage> {
         backgroundColor: widget.subject.color,
         foregroundColor: Colors.white,
       ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(15),
-        itemCount: 15,
-        itemBuilder: (ctx, index) {
-          int lessonNum = index + 1;
-          String lessonId = "${widget.subject.id}_lesson_$lessonNum";
-          String displayTitle =
-              MockDatabase.customLessonTitles[lessonId] ??
-              "${S.get('lesson')} $lessonNum";
+      body: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('lesson_metadata')
+            .where('subjectId', isEqualTo: widget.subject.id)
+            .snapshots(),
+        builder: (context, snapshot) {
+          Map<String, String> customTitles = {};
+          if (snapshot.hasData) {
+            for (var doc in snapshot.data!.docs) {
+              var data = doc.data() as Map<String, dynamic>;
+              if (data.containsKey('custom_title')) {
+                customTitles[doc.id] = data['custom_title'];
+              }
+            }
+          }
 
-          return Card(
-            elevation: 2,
-            margin: const EdgeInsets.only(bottom: 12),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(15),
-            ),
-            child: ListTile(
-              leading: CircleAvatar(
-                backgroundColor: widget.subject.color.withOpacity(0.2),
-                child: Text(
-                  "$lessonNum",
-                  style: TextStyle(
-                    color: widget.subject.color,
-                    fontWeight: FontWeight.bold,
+          return ListView.builder(
+            padding: const EdgeInsets.all(15),
+            itemCount: 15,
+            itemBuilder: (ctx, index) {
+              int lessonNum = index + 1;
+              String lessonId = "${widget.subject.id}_lesson_$lessonNum";
+              String displayTitle =
+                  customTitles[lessonId] ?? "${S.get('lesson')} $lessonNum";
+
+              return Card(
+                elevation: 2,
+                margin: const EdgeInsets.only(bottom: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                child: ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: widget.subject.color.withOpacity(0.2),
+                    child: Text(
+                      "$lessonNum",
+                      style: TextStyle(
+                        color: widget.subject.color,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  title: Text(
+                    displayTitle,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  trailing: isTeacherGlobal
+                      ? IconButton(
+                          icon: const Icon(Icons.edit, color: Colors.blueGrey),
+                          onPressed: () => _editTitle(
+                            lessonId,
+                            displayTitle,
+                            'lesson_metadata',
+                          ),
+                        )
+                      : const Icon(Icons.arrow_forward_ios, size: 16),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => LessonContentPage(
+                        lessonId: lessonId,
+                        title: displayTitle,
+                        color: widget.subject.color,
+                      ),
+                    ),
                   ),
                 ),
-              ),
-              title: Text(
-                displayTitle,
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-              trailing: isTeacherGlobal
-                  ? IconButton(
-                      icon: const Icon(Icons.edit, color: Colors.blueGrey),
-                      onPressed: () => _editLessonTitle(lessonId, displayTitle),
-                    )
-                  : const Icon(Icons.arrow_forward_ios, size: 16),
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => LessonContentPage(
-                    lessonId: lessonId,
-                    title: displayTitle,
-                    color: widget.subject.color,
-                  ),
-                ),
-              ),
-            ),
+              );
+            },
           );
         },
       ),
@@ -806,7 +829,7 @@ class _SubjectLessonsPageState extends State<SubjectLessonsPage> {
   }
 }
 
-// --- 4. صفحة محتوى الدرس الغني ---
+// --- 4. صفحة محتوى الدرس الغني (مربوطة بـ Firestore و Storage) ---
 class LessonContentPage extends StatefulWidget {
   final String lessonId;
   final String title;
@@ -822,12 +845,32 @@ class LessonContentPage extends StatefulWidget {
 }
 
 class _LessonContentPageState extends State<LessonContentPage> {
-  List<ContentBlock> contents = [];
+  bool isUploading = false;
 
-  @override
-  void initState() {
-    super.initState();
-    contents = MockDatabase.lessonContents[widget.lessonId] ?? [];
+  Future<String?> _uploadFile() async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles();
+    if (result != null && result.files.single.path != null) {
+      setState(() => isUploading = true);
+      try {
+        File file = File(result.files.single.path!);
+        String fileName =
+            "${DateTime.now().millisecondsSinceEpoch}_${result.files.single.name}";
+        Reference ref = FirebaseStorage.instance.ref(
+          'lesson_files/${widget.lessonId}/$fileName',
+        );
+        UploadTask uploadTask = ref.putFile(file);
+        TaskSnapshot snapshot = await uploadTask;
+        String downloadUrl = await snapshot.ref.getDownloadURL();
+        setState(() => isUploading = false);
+        return downloadUrl;
+      } catch (e) {
+        setState(() => isUploading = false);
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("فشل الرفع: $e")));
+      }
+    }
+    return null;
   }
 
   void _addContentDialog() {
@@ -851,25 +894,47 @@ class _LessonContentPageState extends State<LessonContentPage> {
                     child: Text(S.get('text_type')),
                   ),
                   DropdownMenuItem(
-                    value: 'image',
-                    child: Text(S.get('img_type')),
-                  ),
-                  DropdownMenuItem(
-                    value: 'video',
-                    child: Text(S.get('vid_type')),
+                    value: 'file',
+                    child: Text(S.get('file_type')),
                   ),
                 ],
                 onChanged: (v) => setDialogState(() => selectedType = v!),
               ),
               const SizedBox(height: 15),
-              TextField(
-                controller: ctrl,
-                maxLines: selectedType == 'text' ? 5 : 1,
-                decoration: InputDecoration(
-                  labelText: S.get('content'),
-                  border: const OutlineInputBorder(),
-                ),
-              ),
+              if (selectedType == 'text')
+                TextField(
+                  controller: ctrl,
+                  maxLines: 5,
+                  decoration: InputDecoration(
+                    labelText: S.get('content'),
+                    border: const OutlineInputBorder(),
+                  ),
+                )
+              else
+                isUploading
+                    ? const CircularProgressIndicator()
+                    : ElevatedButton.icon(
+                        onPressed: () async {
+                          setDialogState(() => isUploading = true);
+                          String? fileUrl = await _uploadFile();
+                          setDialogState(() => isUploading = false);
+
+                          if (fileUrl != null) {
+                            // بمجرد رفع الملف بنجاح، يتم حفظه مباشرة كعنصر محتوى
+                            await FirebaseFirestore.instance
+                                .collection('lesson_contents')
+                                .add({
+                                  'lessonId': widget.lessonId,
+                                  'type': 'file',
+                                  'data': fileUrl,
+                                  'timestamp': FieldValue.serverTimestamp(),
+                                });
+                            if (mounted) Navigator.pop(ctx);
+                          }
+                        },
+                        icon: const Icon(Icons.upload_file),
+                        label: Text(S.get('file_type')),
+                      ),
             ],
           ),
           actions: [
@@ -877,34 +942,44 @@ class _LessonContentPageState extends State<LessonContentPage> {
               onPressed: () => Navigator.pop(c),
               child: Text(S.get('cancel')),
             ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: widget.color,
-                foregroundColor: Colors.white,
+            if (selectedType == 'text')
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: widget.color,
+                  foregroundColor: Colors.white,
+                ),
+                onPressed: () async {
+                  if (ctrl.text.isNotEmpty) {
+                    await FirebaseFirestore.instance
+                        .collection('lesson_contents')
+                        .add({
+                          'lessonId': widget.lessonId,
+                          'type': 'text',
+                          'data': ctrl.text,
+                          'timestamp': FieldValue.serverTimestamp(),
+                        });
+                    if (mounted) Navigator.pop(context);
+                  }
+                },
+                child: Text(S.get('save')),
               ),
-              onPressed: () {
-                if (ctrl.text.isNotEmpty) {
-                  setState(() {
-                    contents.add(
-                      ContentBlock(type: selectedType, data: ctrl.text),
-                    );
-                    MockDatabase.lessonContents[widget.lessonId] = contents;
-                  });
-                  Navigator.pop(context);
-                }
-              },
-              child: Text(S.get('save')),
-            ),
           ],
         ),
       ),
     );
   }
 
-  Future<void> _launchVideo(String url) async {
+  Future<void> _launchURL(String url) async {
     final uri = Uri.parse(url);
     if (await canLaunchUrl(uri))
       await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+
+  void _deleteContent(String docId) async {
+    await FirebaseFirestore.instance
+        .collection('lesson_contents')
+        .doc(docId)
+        .delete();
   }
 
   @override
@@ -915,70 +990,123 @@ class _LessonContentPageState extends State<LessonContentPage> {
         backgroundColor: widget.color,
         foregroundColor: Colors.white,
       ),
-      body: contents.isEmpty
-          ? const Center(
+      body: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('lesson_contents')
+            .where('lessonId', isEqualTo: widget.lessonId)
+            .orderBy('timestamp')
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+            return const Center(
               child: Text(
                 "محتوى الدرس غير متوفر بعد.",
                 style: TextStyle(fontSize: 18),
               ),
-            )
-          : ListView.builder(
-              padding: const EdgeInsets.all(20),
-              itemCount: contents.length,
-              itemBuilder: (ctx, i) {
-                final block = contents[i];
-                if (block.type == 'image') {
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 20),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(15),
-                      child: Image.network(block.data, fit: BoxFit.cover),
+            );
+          }
+
+          var contents = snapshot.data!.docs;
+
+          return ListView.builder(
+            padding: const EdgeInsets.all(20),
+            itemCount: contents.length,
+            itemBuilder: (ctx, i) {
+              var block = contents[i].data() as Map<String, dynamic>;
+              String type = block['type'];
+              String data = block['data'];
+              String docId = contents[i].id;
+
+              Widget contentWidget;
+
+              if (type == 'file') {
+                // التعرف البسيط على الصور من خلال الرابط (الامتدادات الشائعة)
+                bool isImage =
+                    data.contains('.png') ||
+                    data.contains('.jpg') ||
+                    data.contains('.jpeg') ||
+                    data.contains('alt=media');
+
+                if (isImage) {
+                  contentWidget = ClipRRect(
+                    borderRadius: BorderRadius.circular(15),
+                    child: Image.network(
+                      data,
+                      fit: BoxFit.cover,
+                      loadingBuilder: (c, child, progress) {
+                        if (progress == null) return child;
+                        return const Center(child: CircularProgressIndicator());
+                      },
                     ),
                   );
-                } else if (block.type == 'video') {
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 20),
-                    child: InkWell(
-                      onTap: () => _launchVideo(block.data),
-                      child: Container(
-                        height: 100,
-                        decoration: BoxDecoration(
-                          color: widget.color.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(15),
-                          border: Border.all(color: widget.color),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.play_circle_fill,
-                              size: 40,
+                } else {
+                  contentWidget = InkWell(
+                    onTap: () => _launchURL(data),
+                    child: Container(
+                      height: 80,
+                      decoration: BoxDecoration(
+                        color: widget.color.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(15),
+                        border: Border.all(color: widget.color),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.insert_drive_file,
+                            size: 30,
+                            color: widget.color,
+                          ),
+                          const SizedBox(width: 10),
+                          Text(
+                            S.get('open_file'),
+                            style: TextStyle(
+                              fontSize: 16,
                               color: widget.color,
+                              fontWeight: FontWeight.bold,
                             ),
-                            const SizedBox(width: 10),
-                            Text(
-                              S.get('watch_video'),
-                              style: TextStyle(
-                                fontSize: 18,
-                                color: widget.color,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
                   );
                 }
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 20),
-                  child: Text(
-                    block.data,
-                    style: const TextStyle(fontSize: 18, height: 1.6),
-                  ),
+              } else {
+                contentWidget = Text(
+                  data,
+                  style: const TextStyle(fontSize: 18, height: 1.6),
                 );
-              },
-            ),
+              }
+
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 20),
+                child: isTeacherGlobal
+                    ? Stack(
+                        children: [
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(10),
+                            child: contentWidget,
+                          ),
+                          Positioned(
+                            top: 0,
+                            left: 0,
+                            child: IconButton(
+                              icon: const Icon(Icons.delete, color: Colors.red),
+                              onPressed: () => _deleteContent(docId),
+                            ),
+                          ),
+                        ],
+                      )
+                    : contentWidget,
+              );
+            },
+          );
+        },
+      ),
       floatingActionButton: isTeacherGlobal
           ? FloatingActionButton.extended(
               onPressed: _addContentDialog,
@@ -994,7 +1122,7 @@ class _LessonContentPageState extends State<LessonContentPage> {
   }
 }
 
-// --- 5. نظام الاختبارات المتقدم ---
+// --- 5. نظام الاختبارات المتقدم (مربوط بـ Firestore) ---
 class QuizzesGridPage extends StatelessWidget {
   const QuizzesGridPage({super.key});
   @override
@@ -1034,45 +1162,113 @@ class QuizzesGridPage extends StatelessWidget {
   }
 }
 
-class SubjectQuizzesListPage extends StatelessWidget {
+class SubjectQuizzesListPage extends StatefulWidget {
   final SubjectData subject;
   const SubjectQuizzesListPage({super.key, required this.subject});
+
+  @override
+  State<SubjectQuizzesListPage> createState() => _SubjectQuizzesListPageState();
+}
+
+class _SubjectQuizzesListPageState extends State<SubjectQuizzesListPage> {
+  void _editQuizTitle(String docId, String currentTitle) {
+    final ctrl = TextEditingController(text: currentTitle);
+    showDialog(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: Text(S.get('edit_title')),
+        content: TextField(
+          controller: ctrl,
+          decoration: InputDecoration(labelText: S.get('new_title')),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(c),
+            child: Text(S.get('cancel')),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: widget.subject.color,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () async {
+              if (ctrl.text.isNotEmpty) {
+                await FirebaseFirestore.instance
+                    .collection('quiz_metadata')
+                    .doc(docId)
+                    .set({'custom_title': ctrl.text}, SetOptions(merge: true));
+              }
+              if (mounted) Navigator.pop(context);
+            },
+            child: Text(S.get('save')),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("${S.get('quiz_title')} - ${S.get(subject.nameKey)}"),
-        backgroundColor: subject.color,
+        title: Text(
+          "${S.get('quiz_title')} - ${S.get(widget.subject.nameKey)}",
+        ),
+        backgroundColor: widget.subject.color,
         foregroundColor: Colors.white,
       ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(15),
-        itemCount: 15,
-        itemBuilder: (ctx, i) {
-          int lessonNum = i + 1;
-          String quizId = "${subject.id}_quiz_$lessonNum";
-          return Card(
-            child: ListTile(
-              leading: const Icon(Icons.quiz, color: Colors.orange),
-              title: Text("اختبار ${S.get('lesson')} $lessonNum"),
-              trailing: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: subject.color,
-                  foregroundColor: Colors.white,
-                ),
-                onPressed: () => Navigator.push(
-                  ctx,
-                  MaterialPageRoute(
-                    builder: (_) => QuizPlayArea(
-                      quizId: quizId,
-                      color: subject.color,
-                      title: "اختبار الدرس $lessonNum",
+      body: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('quiz_metadata')
+            .where('subjectId', isEqualTo: widget.subject.id)
+            .snapshots(),
+        builder: (context, snapshot) {
+          Map<String, String> customTitles = {};
+          if (snapshot.hasData) {
+            for (var doc in snapshot.data!.docs) {
+              var data = doc.data() as Map<String, dynamic>;
+              if (data.containsKey('custom_title')) {
+                customTitles[doc.id] = data['custom_title'];
+              }
+            }
+          }
+
+          return ListView.builder(
+            padding: const EdgeInsets.all(15),
+            itemCount: 15,
+            itemBuilder: (ctx, i) {
+              int lessonNum = i + 1;
+              String quizId = "${widget.subject.id}_quiz_$lessonNum";
+              String displayTitle =
+                  customTitles[quizId] ??
+                  "اختبار ${S.get('lesson')} $lessonNum";
+
+              return Card(
+                child: ListTile(
+                  leading: const Icon(Icons.quiz, color: Colors.orange),
+                  title: Text(
+                    displayTitle,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  trailing: isTeacherGlobal
+                      ? IconButton(
+                          icon: const Icon(Icons.edit, color: Colors.blueGrey),
+                          onPressed: () => _editQuizTitle(quizId, displayTitle),
+                        )
+                      : null,
+                  onTap: () => Navigator.push(
+                    ctx,
+                    MaterialPageRoute(
+                      builder: (_) => QuizPlayArea(
+                        quizId: quizId,
+                        color: widget.subject.color,
+                        title: displayTitle,
+                      ),
                     ),
                   ),
                 ),
-                child: Text(isTeacherGlobal ? "إدارة" : S.get('start')),
-              ),
-            ),
+              );
+            },
           );
         },
       ),
@@ -1095,15 +1291,38 @@ class QuizPlayArea extends StatefulWidget {
 }
 
 class _QuizPlayAreaState extends State<QuizPlayArea> {
-  List<Map<String, dynamic>> questions = [];
   int currentQuestionIndex = 0;
   int score = 0;
   bool isFinished = false;
+  bool isUploadingImg = false;
 
-  @override
-  void initState() {
-    super.initState();
-    questions = MockDatabase.quizzes[widget.quizId] ?? [];
+  Future<void> _uploadExamImage() async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+      type: FileType.image,
+    );
+    if (result != null && result.files.single.path != null) {
+      setState(() => isUploadingImg = true);
+      try {
+        File file = File(result.files.single.path!);
+        String fileName =
+            "exam_${DateTime.now().millisecondsSinceEpoch}_${result.files.single.name}";
+        Reference ref = FirebaseStorage.instance.ref(
+          'quiz_images/${widget.quizId}/$fileName',
+        );
+        await ref.putFile(file);
+        String downloadUrl = await ref.getDownloadURL();
+
+        await FirebaseFirestore.instance
+            .collection('quiz_metadata')
+            .doc(widget.quizId)
+            .set({'exam_image': downloadUrl}, SetOptions(merge: true));
+      } catch (e) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("خطأ في الرفع: $e")));
+      }
+      setState(() => isUploadingImg = false);
+    }
   }
 
   void _addQuestionDialog() {
@@ -1160,16 +1379,23 @@ class _QuizPlayAreaState extends State<QuizPlayArea> {
           ),
           actions: [
             ElevatedButton(
-              onPressed: () {
-                setState(() {
-                  questions.add({
-                    'q': qCtrl.text,
-                    'opts': [opt1.text, opt2.text, opt3.text, opt4.text],
-                    'ans': correctOpt - 1,
-                  });
-                  MockDatabase.quizzes[widget.quizId] = questions;
-                });
-                Navigator.pop(context);
+              style: ElevatedButton.styleFrom(
+                backgroundColor: widget.color,
+                foregroundColor: Colors.white,
+              ),
+              onPressed: () async {
+                if (qCtrl.text.isNotEmpty && opt1.text.isNotEmpty) {
+                  await FirebaseFirestore.instance
+                      .collection('quiz_questions')
+                      .add({
+                        'quizId': widget.quizId,
+                        'q': qCtrl.text,
+                        'opts': [opt1.text, opt2.text, opt3.text, opt4.text],
+                        'ans': correctOpt - 1,
+                        'timestamp': FieldValue.serverTimestamp(),
+                      });
+                  if (mounted) Navigator.pop(context);
+                }
               },
               child: Text(S.get('save')),
             ),
@@ -1179,8 +1405,13 @@ class _QuizPlayAreaState extends State<QuizPlayArea> {
     );
   }
 
-  void _answerQuestion(int selectedIndex) {
-    if (selectedIndex == questions[currentQuestionIndex]['ans']) score++;
+  void _answerQuestion(
+    int selectedIndex,
+    List<QueryDocumentSnapshot> questions,
+  ) {
+    var qData = questions[currentQuestionIndex].data() as Map<String, dynamic>;
+    if (selectedIndex == qData['ans']) score++;
+
     if (currentQuestionIndex < questions.length - 1) {
       setState(() => currentQuestionIndex++);
     } else {
@@ -1195,64 +1426,133 @@ class _QuizPlayAreaState extends State<QuizPlayArea> {
         title: Text(widget.title),
         backgroundColor: widget.color,
         foregroundColor: Colors.white,
-      ),
-      body: questions.isEmpty
-          ? Center(
-              child: Text(
-                isTeacherGlobal
-                    ? "لا توجد أسئلة، أضف أسئلة الآن"
-                    : "الاختبار غير متاح بعد",
-                style: const TextStyle(fontSize: 18),
-              ),
-            )
-          : isFinished
-          ? Center(
-              child: Text(
-                "${S.get('score')}: $score / ${questions.length}",
-                style: const TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            )
-          : Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    "السؤال ${currentQuestionIndex + 1}/${questions.length}",
-                    style: const TextStyle(fontSize: 18, color: Colors.grey),
+        actions: [
+          if (isTeacherGlobal)
+            isUploadingImg
+                ? const Padding(
+                    padding: EdgeInsets.all(15.0),
+                    child: CircularProgressIndicator(color: Colors.white),
+                  )
+                : IconButton(
+                    icon: const Icon(Icons.add_photo_alternate),
+                    tooltip: S.get('exam_img'),
+                    onPressed: _uploadExamImage,
                   ),
-                  const SizedBox(height: 20),
-                  Text(
-                    questions[currentQuestionIndex]['q'],
+        ],
+      ),
+      body: StreamBuilder<DocumentSnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('quiz_metadata')
+            .doc(widget.quizId)
+            .snapshots(),
+        builder: (ctx, metaSnapshot) {
+          String? examImageUrl;
+          if (metaSnapshot.hasData && metaSnapshot.data!.exists) {
+            var mData = metaSnapshot.data!.data() as Map<String, dynamic>;
+            if (mData.containsKey('exam_image'))
+              examImageUrl = mData['exam_image'];
+          }
+
+          return StreamBuilder<QuerySnapshot>(
+            stream: FirebaseFirestore.instance
+                .collection('quiz_questions')
+                .where('quizId', isEqualTo: widget.quizId)
+                .orderBy('timestamp')
+                .snapshots(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting)
+                return const Center(child: CircularProgressIndicator());
+
+              var questions = snapshot.data?.docs ?? [];
+
+              if (questions.isEmpty) {
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      if (examImageUrl != null)
+                        Padding(
+                          padding: const EdgeInsets.all(20),
+                          child: Image.network(examImageUrl, height: 200),
+                        ),
+                      Text(
+                        isTeacherGlobal
+                            ? "لا توجد أسئلة، أضف أسئلة الآن"
+                            : "الاختبار غير متاح بعد",
+                        style: const TextStyle(fontSize: 18),
+                      ),
+                    ],
+                  ),
+                );
+              }
+
+              if (isFinished) {
+                return Center(
+                  child: Text(
+                    "${S.get('score')}: $score / ${questions.length}",
                     style: const TextStyle(
-                      fontSize: 22,
+                      fontSize: 26,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const SizedBox(height: 30),
-                  ...List.generate(
-                    4,
-                    (index) => Padding(
-                      padding: const EdgeInsets.only(bottom: 10),
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          minimumSize: const Size(double.infinity, 55),
-                          alignment: Alignment.centerRight,
+                );
+              }
+
+              var currentQData =
+                  questions[currentQuestionIndex].data()
+                      as Map<String, dynamic>;
+              List<dynamic> options = currentQData['opts'];
+
+              return SingleChildScrollView(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (examImageUrl != null)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 20),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(15),
+                          child: Image.network(examImageUrl, fit: BoxFit.cover),
                         ),
-                        onPressed: () => _answerQuestion(index),
-                        child: Text(
-                          questions[currentQuestionIndex]['opts'][index],
-                          style: const TextStyle(fontSize: 18),
+                      ),
+                    Text(
+                      "السؤال ${currentQuestionIndex + 1}/${questions.length}",
+                      style: const TextStyle(fontSize: 18, color: Colors.grey),
+                    ),
+                    const SizedBox(height: 20),
+                    Text(
+                      currentQData['q'],
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 30),
+                    ...List.generate(
+                      options.length,
+                      (index) => Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            minimumSize: const Size(double.infinity, 55),
+                            alignment: Alignment.centerRight,
+                          ),
+                          onPressed: () => _answerQuestion(index, questions),
+                          child: Text(
+                            options[index],
+                            style: const TextStyle(fontSize: 18),
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ],
-              ),
-            ),
+                  ],
+                ),
+              );
+            },
+          );
+        },
+      ),
       floatingActionButton: isTeacherGlobal
           ? FloatingActionButton.extended(
               onPressed: _addQuestionDialog,
