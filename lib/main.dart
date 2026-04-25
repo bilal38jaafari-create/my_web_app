@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
+import 'package:supabase_flutter/supabase_flutter.dart'
+    hide User; // إخفاء User لمنع التعارض
 import 'package:file_picker/file_picker.dart';
 import 'dart:ui';
-import 'dart:io';
+import 'dart:io' show File;
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart' show kIsWeb; // ضروري لدعم الويب
 import 'firebase_options.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -41,19 +44,22 @@ class S {
       'lang': 'لغة التطبيق',
       'logout': 'تسجيل الخروج',
       'support': 'التواصل مع الدعم',
-      // المواد
+      'add_lesson': 'إضافة درس جديد',
+      'add_quiz': 'إضافة اختبار جديد',
       'math': 'الرياضيات',
       'physics': 'الفيزياء',
-      'science': 'العلوم',
-      'arabic': 'العربية',
-      'french': 'الفرنسية',
-      'english': 'الإنجليزية',
+      'science': 'علوم الحياة والأرض',
+      'arabic': 'اللغة العربية',
+      'french': 'اللغة الفرنسية',
+      'english': 'اللغة الإنجليزية',
       'history': 'التاريخ',
       'geography': 'الجغرافيا',
       'islamic': 'التربية الإسلامية',
       'philosophy': 'الفلسفة',
       'it': 'الإعلاميات',
-      // إضافة المحتوى
+      'chemistry': 'الكيمياء',
+      'biology': 'الأحياء',
+      'economics': 'الاقتصاد',
       'add_q': 'إضافة سؤال',
       'q_text': 'نص السؤال',
       'opt': 'الخيار',
@@ -100,9 +106,11 @@ class S {
       'lang': 'App Language',
       'logout': 'Logout',
       'support': 'Contact Support',
+      'add_lesson': 'Add New Lesson',
+      'add_quiz': 'Add New Quiz',
       'math': 'Mathematics',
       'physics': 'Physics',
-      'science': 'Science',
+      'science': 'Life & Earth Sciences',
       'arabic': 'Arabic',
       'french': 'French',
       'english': 'English',
@@ -111,6 +119,9 @@ class S {
       'islamic': 'Islamic Ed',
       'philosophy': 'Philosophy',
       'it': 'Computer Science',
+      'chemistry': 'Chemistry',
+      'biology': 'Biology',
+      'economics': 'Economics',
       'add_q': 'Add Question',
       'q_text': 'Question Text',
       'opt': 'Option',
@@ -148,8 +159,14 @@ void main() async {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
+    // إعداد Supabase مع الـ URL والمفتاح الخاص بك (تم سحبه من صورتك)
+    await Supabase.initialize(
+      url: 'https://vlyikngandsoznwzqtgp.supabase.co',
+      anonKey:
+          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZseWlrbmdhbmRzb3pud3pxdGdwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxMTU0NTgsImV4cCI6MjA5MjY5MTQ1OH0.gLROhgs5rWvRqLVpDR5du7zMgrOsQO6HWraoXnwyBPg',
+    );
   } catch (e) {
-    debugPrint("Firebase Init Error: $e");
+    debugPrint("Init Error: $e");
   }
   runApp(const JaafariGuideApp());
 }
@@ -189,7 +206,6 @@ class JaafariGuideApp extends StatelessWidget {
 // --- نظام توجيه الدخول ---
 class AuthWrapper extends StatelessWidget {
   const AuthWrapper({super.key});
-
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<User?>(
@@ -197,8 +213,7 @@ class AuthWrapper extends StatelessWidget {
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
+              body: Center(child: CircularProgressIndicator()));
         }
         if (snapshot.hasData && snapshot.data != null) {
           return UserDataFetcher(uid: snapshot.data!.uid);
@@ -212,7 +227,6 @@ class AuthWrapper extends StatelessWidget {
 class UserDataFetcher extends StatelessWidget {
   final String uid;
   const UserDataFetcher({super.key, required this.uid});
-
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<DocumentSnapshot>(
@@ -220,8 +234,7 @@ class UserDataFetcher extends StatelessWidget {
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
+              body: Center(child: CircularProgressIndicator()));
         }
 
         currentUserEmailGlobal = FirebaseAuth.instance.currentUser?.email ?? '';
@@ -237,9 +250,8 @@ class UserDataFetcher extends StatelessWidget {
           var data = snapshot.data!.data() as Map<String, dynamic>;
           currentUserNameGlobal = "${data['firstName']} ${data['lastName']}";
         } else {
-          currentUserNameGlobal = isTeacherGlobal
-              ? "أستاذ بلال الجعفري"
-              : "تلميذ";
+          currentUserNameGlobal =
+              isTeacherGlobal ? "أستاذ بلال الجعفري" : "تلميذ";
         }
         return const MainNavigation();
       },
@@ -247,7 +259,7 @@ class UserDataFetcher extends StatelessWidget {
   }
 }
 
-// --- 1. واجهة تسجيل الدخول ---
+// --- 1. واجهة تسجيل الدخول (تصميمك الأصلي المحفوظ) ---
 class AppleGlassLoginScreen extends StatefulWidget {
   const AppleGlassLoginScreen({super.key});
   @override
@@ -272,12 +284,10 @@ class _AppleGlassLoginScreenState extends State<AppleGlassLoginScreen> {
   Future<void> _submit() async {
     String email = _emailCtrl.text.trim();
     String pass = _passCtrl.text.trim();
-
     if (email.isEmpty || pass.isEmpty) {
       _showError(S.get('fill_fields'));
       return;
     }
-
     setState(() => isLoading = true);
 
     try {
@@ -299,25 +309,21 @@ class _AppleGlassLoginScreenState extends State<AppleGlassLoginScreen> {
 
         UserCredential cred = await FirebaseAuth.instance
             .createUserWithEmailAndPassword(email: email, password: pass);
-
         await FirebaseFirestore.instance
             .collection('users')
             .doc(cred.user!.uid)
             .set({
-              'firstName': fname,
-              'lastName': lname,
-              'role': 'تلميذ',
-              'email': email,
-              'createdAt': FieldValue.serverTimestamp(),
-            });
+          'firstName': fname,
+          'lastName': lname,
+          'role': 'تلميذ',
+          'email': email,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
       } else {
-        await FirebaseAuth.instance.signInWithEmailAndPassword(
-          email: email,
-          password: pass,
-        );
+        await FirebaseAuth.instance
+            .signInWithEmailAndPassword(email: email, password: pass);
       }
     } on FirebaseAuthException catch (e) {
-      // إصلاح رسائل الخطأ لتكون مفهومة
       if (e.code == 'user-not-found' ||
           e.code == 'wrong-password' ||
           e.code == 'invalid-credential') {
@@ -338,18 +344,16 @@ class _AppleGlassLoginScreenState extends State<AppleGlassLoginScreen> {
       height: 100,
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Colors.white30, Colors.white10],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+            colors: [Colors.white30, Colors.white10],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight),
         borderRadius: BorderRadius.circular(25),
         border: Border.all(color: Colors.white.withOpacity(0.4), width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
-          ),
+              color: Colors.black.withOpacity(0.2),
+              blurRadius: 15,
+              offset: const Offset(0, 5))
         ],
       ),
       child: Stack(
@@ -357,12 +361,11 @@ class _AppleGlassLoginScreenState extends State<AppleGlassLoginScreen> {
         children: [
           const Icon(Icons.menu_book_rounded, size: 45, color: Colors.white70),
           Positioned(
-            top: 15,
-            child: Transform.rotate(
-              angle: -0.1,
-              child: const Icon(Icons.school, size: 55, color: Colors.white),
-            ),
-          ),
+              top: 15,
+              child: Transform.rotate(
+                  angle: -0.1,
+                  child:
+                      const Icon(Icons.school, size: 55, color: Colors.white))),
         ],
       ),
     );
@@ -375,34 +378,25 @@ class _AppleGlassLoginScreenState extends State<AppleGlassLoginScreen> {
         children: [
           Container(
             decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Color(0xFF0F2027),
-                  Color(0xFF203A43),
-                  Color(0xFF2C5364),
-                ],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-              ),
+              gradient: LinearGradient(colors: [
+                Color(0xFF0F2027),
+                Color(0xFF203A43),
+                Color(0xFF2C5364)
+              ], begin: Alignment.topCenter, end: Alignment.bottomCenter),
             ),
           ),
           Positioned(
-            top: -50,
-            left: -50,
-            child: CircleAvatar(
-              radius: 100,
-              backgroundColor: Colors.deepPurpleAccent.withOpacity(0.3),
-            ),
-          ),
+              top: -50,
+              left: -50,
+              child: CircleAvatar(
+                  radius: 100,
+                  backgroundColor: Colors.deepPurpleAccent.withOpacity(0.3))),
           Positioned(
-            bottom: -50,
-            right: -50,
-            child: CircleAvatar(
-              radius: 120,
-              backgroundColor: Colors.tealAccent.withOpacity(0.2),
-            ),
-          ),
-
+              bottom: -50,
+              right: -50,
+              child: CircleAvatar(
+                  radius: 120,
+                  backgroundColor: Colors.tealAccent.withOpacity(0.2))),
           Center(
             child: SingleChildScrollView(
               child: ClipRRect(
@@ -413,108 +407,75 @@ class _AppleGlassLoginScreenState extends State<AppleGlassLoginScreen> {
                     width: 350,
                     padding: const EdgeInsets.all(30),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(30),
-                      border: Border.all(
-                        color: Colors.white.withOpacity(0.2),
-                        width: 1.5,
-                      ),
-                    ),
+                        color: Colors.white.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(30),
+                        border: Border.all(
+                            color: Colors.white.withOpacity(0.2), width: 1.5)),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         _buildMinimalistLogo(),
                         const SizedBox(height: 20),
-                        Text(
-                          S.get('app_title'),
-                          style: const TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                            letterSpacing: 1.2,
-                          ),
-                        ),
+                        Text(S.get('app_title'),
+                            style: const TextStyle(
+                                fontSize: 28,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                                letterSpacing: 1.2)),
                         const SizedBox(height: 30),
-
                         if (isRegistering) ...[
                           Row(
                             children: [
                               Expanded(
-                                child: _buildGlassField(
-                                  _firstNameCtrl,
-                                  S.get('first_name'),
-                                  Icons.person,
-                                ),
-                              ),
+                                  child: _buildGlassField(_firstNameCtrl,
+                                      S.get('first_name'), Icons.person)),
                               const SizedBox(width: 10),
                               Expanded(
-                                child: _buildGlassField(
-                                  _lastNameCtrl,
-                                  S.get('last_name'),
-                                  Icons.person_outline,
-                                ),
-                              ),
+                                  child: _buildGlassField(
+                                      _lastNameCtrl,
+                                      S.get('last_name'),
+                                      Icons.person_outline)),
                             ],
                           ),
                           const SizedBox(height: 15),
                         ],
-
                         _buildGlassField(
-                          _emailCtrl,
-                          S.get('email'),
-                          Icons.email,
-                        ),
+                            _emailCtrl, S.get('email'), Icons.email),
                         const SizedBox(height: 15),
-                        _buildGlassField(
-                          _passCtrl,
-                          S.get('pass'),
-                          Icons.lock,
-                          obscure: true,
-                        ),
-
+                        _buildGlassField(_passCtrl, S.get('pass'), Icons.lock,
+                            obscure: true),
                         if (isRegistering) ...[
                           const SizedBox(height: 15),
-                          _buildGlassField(
-                            _confirmPassCtrl,
-                            S.get('confirm_pass'),
-                            Icons.lock_reset,
-                            obscure: true,
-                          ),
+                          _buildGlassField(_confirmPassCtrl,
+                              S.get('confirm_pass'), Icons.lock_reset,
+                              obscure: true),
                         ],
-
                         const SizedBox(height: 30),
-
                         isLoading
                             ? const CircularProgressIndicator(
-                                color: Colors.white,
-                              )
+                                color: Colors.white)
                             : ElevatedButton(
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.white.withOpacity(
-                                    0.2,
-                                  ),
-                                  foregroundColor: Colors.white,
-                                  minimumSize: const Size(double.infinity, 55),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  side: BorderSide(
-                                    color: Colors.white.withOpacity(0.3),
-                                  ),
-                                  elevation: 0,
-                                ),
+                                    backgroundColor:
+                                        Colors.white.withOpacity(0.2),
+                                    foregroundColor: Colors.white,
+                                    minimumSize:
+                                        const Size(double.infinity, 55),
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(20)),
+                                    side: BorderSide(
+                                        color: Colors.white.withOpacity(0.3)),
+                                    elevation: 0),
                                 onPressed: _submit,
                                 child: Text(
-                                  isRegistering
-                                      ? S.get('register')
-                                      : S.get('login'),
-                                  style: const TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w600,
-                                    letterSpacing: 1,
-                                  ),
-                                ),
-                              ),
+                                    isRegistering
+                                        ? S.get('register')
+                                        : S.get('login'),
+                                    style: const TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w600,
+                                        letterSpacing: 1))),
                         const SizedBox(height: 15),
                         TextButton(
                           onPressed: () => setState(() {
@@ -523,9 +484,10 @@ class _AppleGlassLoginScreenState extends State<AppleGlassLoginScreen> {
                             _passCtrl.clear();
                           }),
                           child: Text(
-                            isRegistering ? S.get('have_acc') : S.get('no_acc'),
-                            style: const TextStyle(color: Colors.white70),
-                          ),
+                              isRegistering
+                                  ? S.get('have_acc')
+                                  : S.get('no_acc'),
+                              style: const TextStyle(color: Colors.white70)),
                         ),
                       ],
                     ),
@@ -540,11 +502,8 @@ class _AppleGlassLoginScreenState extends State<AppleGlassLoginScreen> {
   }
 
   Widget _buildGlassField(
-    TextEditingController ctrl,
-    String hint,
-    IconData icon, {
-    bool obscure = false,
-  }) {
+      TextEditingController ctrl, String hint, IconData icon,
+      {bool obscure = false}) {
     return TextField(
       controller: ctrl,
       obscureText: obscure,
@@ -556,17 +515,14 @@ class _AppleGlassLoginScreenState extends State<AppleGlassLoginScreen> {
         fillColor: Colors.white.withOpacity(0.1),
         prefixIcon: Icon(icon, color: Colors.white70),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(20),
-          borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
-        ),
+            borderRadius: BorderRadius.circular(20),
+            borderSide: BorderSide(color: Colors.white.withOpacity(0.2))),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(20),
-          borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
-        ),
+            borderRadius: BorderRadius.circular(20),
+            borderSide: BorderSide(color: Colors.white.withOpacity(0.2))),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(20),
-          borderSide: const BorderSide(color: Colors.white, width: 1.5),
-        ),
+            borderRadius: BorderRadius.circular(20),
+            borderSide: const BorderSide(color: Colors.white, width: 1.5)),
       ),
     );
   }
@@ -587,24 +543,18 @@ class _MainNavigationState extends State<MainNavigation> {
       body: const [
         LessonsGridPage(),
         QuizzesGridPage(),
-        ProfilePage(),
+        ProfilePage()
       ][_currentIndex],
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
         onDestinationSelected: (i) => setState(() => _currentIndex = i),
         destinations: [
           NavigationDestination(
-            icon: const Icon(Icons.book),
-            label: S.get('lessons'),
-          ),
+              icon: const Icon(Icons.book), label: S.get('lessons')),
           NavigationDestination(
-            icon: const Icon(Icons.quiz),
-            label: S.get('quizzes'),
-          ),
+              icon: const Icon(Icons.quiz), label: S.get('quizzes')),
           NavigationDestination(
-            icon: const Icon(Icons.person),
-            label: S.get('profile'),
-          ),
+              icon: const Icon(Icons.person), label: S.get('profile')),
         ],
       ),
     );
@@ -619,6 +569,7 @@ class SubjectData {
   SubjectData(this.id, this.nameKey, this.icon, this.color);
 }
 
+// المواد متوسعة
 final List<SubjectData> appSubjects = [
   SubjectData("math", "math", Icons.calculate, Colors.deepOrange),
   SubjectData("physics", "physics", Icons.wb_iridescent, Colors.blueAccent),
@@ -631,52 +582,44 @@ final List<SubjectData> appSubjects = [
   SubjectData("islamic", "islamic", Icons.mosque, Colors.green),
   SubjectData("philosophy", "philosophy", Icons.psychology, Colors.purple),
   SubjectData("it", "it", Icons.computer, Colors.blueGrey),
+  SubjectData("chemistry", "chemistry", Icons.science, Colors.cyan),
+  SubjectData(
+      "biology", "biology", Icons.nature, Colors.lightGreenAccent.shade700),
+  SubjectData("economics", "economics", Icons.monetization_on, Colors.amber),
 ];
 
-// --- 3. واجهة الدروس (الآن متصلة بـ Firestore) ---
+// --- 3. واجهة الدروس (ديناميكية مع زر + و - لحفظ البيانات ومنع اختفائها) ---
 class LessonsGridPage extends StatelessWidget {
   const LessonsGridPage({super.key});
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          S.get('subjects'),
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-        centerTitle: true,
-      ),
+          title: Text(S.get('subjects'),
+              style: const TextStyle(fontWeight: FontWeight.bold)),
+          centerTitle: true),
       body: GridView.builder(
         padding: const EdgeInsets.all(15),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          crossAxisSpacing: 15,
-          mainAxisSpacing: 15,
-        ),
+            crossAxisCount: 2, crossAxisSpacing: 15, mainAxisSpacing: 15),
         itemCount: appSubjects.length,
         itemBuilder: (ctx, i) => InkWell(
           onTap: () => Navigator.push(
-            ctx,
-            MaterialPageRoute(
-              builder: (c) => SubjectLessonsPage(subject: appSubjects[i]),
-            ),
-          ),
+              ctx,
+              MaterialPageRoute(
+                  builder: (c) => SubjectLessonsPage(subject: appSubjects[i]))),
           child: Container(
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  appSubjects[i].color,
-                  appSubjects[i].color.withOpacity(0.6),
-                ],
-                begin: Alignment.topLeft,
-              ),
+              gradient: LinearGradient(colors: [
+                appSubjects[i].color,
+                appSubjects[i].color.withOpacity(0.6)
+              ], begin: Alignment.topLeft),
               borderRadius: BorderRadius.circular(25),
               boxShadow: [
                 BoxShadow(
-                  color: appSubjects[i].color.withOpacity(0.3),
-                  blurRadius: 10,
-                  offset: const Offset(0, 5),
-                ),
+                    color: appSubjects[i].color.withOpacity(0.3),
+                    blurRadius: 10,
+                    offset: const Offset(0, 5))
               ],
             ),
             child: Column(
@@ -684,14 +627,12 @@ class LessonsGridPage extends StatelessWidget {
               children: [
                 Icon(appSubjects[i].icon, size: 50, color: Colors.white),
                 const SizedBox(height: 10),
-                Text(
-                  S.get(appSubjects[i].nameKey),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
-                  ),
-                ),
+                Text(S.get(appSubjects[i].nameKey),
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18),
+                    textAlign: TextAlign.center),
               ],
             ),
           ),
@@ -709,6 +650,7 @@ class SubjectLessonsPage extends StatefulWidget {
 }
 
 class _SubjectLessonsPageState extends State<SubjectLessonsPage> {
+  // دالة تعديل العنوان مع استخدام merge لمنع مسح البيانات الأخرى
   void _editTitle(String docId, String currentTitle, String collectionPath) {
     final ctrl = TextEditingController(text: currentTitle);
     showDialog(
@@ -716,21 +658,18 @@ class _SubjectLessonsPageState extends State<SubjectLessonsPage> {
       builder: (c) => AlertDialog(
         title: Text(S.get('edit_title')),
         content: TextField(
-          controller: ctrl,
-          decoration: InputDecoration(labelText: S.get('new_title')),
-        ),
+            controller: ctrl,
+            decoration: InputDecoration(labelText: S.get('new_title'))),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(c),
-            child: Text(S.get('cancel')),
-          ),
+              onPressed: () => Navigator.pop(c), child: Text(S.get('cancel'))),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: widget.subject.color,
-              foregroundColor: Colors.white,
-            ),
+                backgroundColor: widget.subject.color,
+                foregroundColor: Colors.white),
             onPressed: () async {
               if (ctrl.text.isNotEmpty) {
+                // استخدام merge يمنع مسح أي بيانات سابقة
                 await FirebaseFirestore.instance
                     .collection(collectionPath)
                     .doc(docId)
@@ -745,81 +684,123 @@ class _SubjectLessonsPageState extends State<SubjectLessonsPage> {
     );
   }
 
+  // تحديث عدد الدروس في قاعدة البيانات حتى لا يختفي
+  void _updateCount(int newCount) async {
+    await FirebaseFirestore.instance
+        .collection('subject_config')
+        .doc(widget.subject.id)
+        .set({'lesson_count': newCount}, SetOptions(merge: true));
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(S.get(widget.subject.nameKey)),
-        backgroundColor: widget.subject.color,
-        foregroundColor: Colors.white,
-      ),
-      body: StreamBuilder<QuerySnapshot>(
+          title: Text(S.get(widget.subject.nameKey)),
+          backgroundColor: widget.subject.color,
+          foregroundColor: Colors.white),
+      body: StreamBuilder<DocumentSnapshot>(
+        // نستمع لقاعدة البيانات لنعرف كم درساً يوجد (الافتراضي 15)
         stream: FirebaseFirestore.instance
-            .collection('lesson_metadata')
-            .where('subjectId', isEqualTo: widget.subject.id)
+            .collection('subject_config')
+            .doc(widget.subject.id)
             .snapshots(),
-        builder: (context, snapshot) {
-          Map<String, String> customTitles = {};
-          if (snapshot.hasData) {
-            for (var doc in snapshot.data!.docs) {
-              var data = doc.data() as Map<String, dynamic>;
-              if (data.containsKey('custom_title')) {
-                customTitles[doc.id] = data['custom_title'];
-              }
-            }
+        builder: (context, configSnap) {
+          int currentCount = 15;
+          if (configSnap.hasData && configSnap.data!.exists) {
+            var data = configSnap.data!.data() as Map<String, dynamic>;
+            if (data.containsKey('lesson_count'))
+              currentCount = data['lesson_count'];
           }
 
-          return ListView.builder(
-            padding: const EdgeInsets.all(15),
-            itemCount: 15,
-            itemBuilder: (ctx, index) {
-              int lessonNum = index + 1;
-              String lessonId = "${widget.subject.id}_lesson_$lessonNum";
-              String displayTitle =
-                  customTitles[lessonId] ?? "${S.get('lesson')} $lessonNum";
+          return StreamBuilder<QuerySnapshot>(
+            stream: FirebaseFirestore.instance
+                .collection('lesson_metadata')
+                .where('subjectId', isEqualTo: widget.subject.id)
+                .snapshots(),
+            builder: (context, snapshot) {
+              Map<String, String> customTitles = {};
+              if (snapshot.hasData) {
+                for (var doc in snapshot.data!.docs) {
+                  var data = doc.data() as Map<String, dynamic>;
+                  if (data.containsKey('custom_title'))
+                    customTitles[doc.id] = data['custom_title'];
+                }
+              }
 
-              return Card(
-                elevation: 2,
-                margin: const EdgeInsets.only(bottom: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                child: ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor: widget.subject.color.withOpacity(0.2),
-                    child: Text(
-                      "$lessonNum",
-                      style: TextStyle(
-                        color: widget.subject.color,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  title: Text(
-                    displayTitle,
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  trailing: isTeacherGlobal
-                      ? IconButton(
-                          icon: const Icon(Icons.edit, color: Colors.blueGrey),
-                          onPressed: () => _editTitle(
-                            lessonId,
-                            displayTitle,
-                            'lesson_metadata',
+              return Column(
+                children: [
+                  Expanded(
+                    child: ListView.builder(
+                      padding: const EdgeInsets.all(15),
+                      itemCount: currentCount,
+                      itemBuilder: (ctx, index) {
+                        int lessonNum = index + 1;
+                        String lessonId =
+                            "${widget.subject.id}_lesson_$lessonNum";
+                        String displayTitle = customTitles[lessonId] ??
+                            "${S.get('lesson')} $lessonNum";
+
+                        return Card(
+                          elevation: 2,
+                          margin: const EdgeInsets.only(bottom: 12),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(15)),
+                          child: ListTile(
+                            leading: CircleAvatar(
+                                backgroundColor:
+                                    widget.subject.color.withOpacity(0.2),
+                                child: Text("$lessonNum",
+                                    style: TextStyle(
+                                        color: widget.subject.color,
+                                        fontWeight: FontWeight.bold))),
+                            title: Text(displayTitle,
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold)),
+                            trailing: isTeacherGlobal
+                                ? IconButton(
+                                    icon: const Icon(Icons.edit,
+                                        color: Colors.blueGrey),
+                                    onPressed: () => _editTitle(lessonId,
+                                        displayTitle, 'lesson_metadata'))
+                                : const Icon(Icons.arrow_forward_ios, size: 16),
+                            onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (_) => LessonContentPage(
+                                        lessonId: lessonId,
+                                        title: displayTitle,
+                                        color: widget.subject.color))),
                           ),
-                        )
-                      : const Icon(Icons.arrow_forward_ios, size: 16),
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => LessonContentPage(
-                        lessonId: lessonId,
-                        title: displayTitle,
-                        color: widget.subject.color,
-                      ),
+                        );
+                      },
                     ),
                   ),
-                ),
+                  if (isTeacherGlobal) // أزرار الناقص والزائد للأستاذ
+                    Container(
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      color: Colors.grey.withOpacity(0.1),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          IconButton(
+                              icon: const Icon(Icons.remove_circle,
+                                  color: Colors.red, size: 35),
+                              onPressed: () {
+                                if (currentCount > 1)
+                                  _updateCount(currentCount - 1);
+                              }),
+                          Text("الدروس الحالية: $currentCount",
+                              style: const TextStyle(
+                                  fontSize: 18, fontWeight: FontWeight.bold)),
+                          IconButton(
+                              icon: const Icon(Icons.add_circle,
+                                  color: Colors.green, size: 35),
+                              onPressed: () => _updateCount(currentCount + 1)),
+                        ],
+                      ),
+                    )
+                ],
               );
             },
           );
@@ -829,17 +810,16 @@ class _SubjectLessonsPageState extends State<SubjectLessonsPage> {
   }
 }
 
-// --- 4. صفحة محتوى الدرس الغني (مربوطة بـ Firestore و Storage) ---
+// --- 4. صفحة محتوى الدرس الغني (تعديل الرفع الجذري ليقبل الويب) ---
 class LessonContentPage extends StatefulWidget {
   final String lessonId;
   final String title;
   final Color color;
-  const LessonContentPage({
-    super.key,
-    required this.lessonId,
-    required this.title,
-    required this.color,
-  });
+  const LessonContentPage(
+      {super.key,
+      required this.lessonId,
+      required this.title,
+      required this.color});
   @override
   State<LessonContentPage> createState() => _LessonContentPageState();
 }
@@ -847,27 +827,43 @@ class LessonContentPage extends StatefulWidget {
 class _LessonContentPageState extends State<LessonContentPage> {
   bool isUploading = false;
 
-  Future<String?> _uploadFile() async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles();
-    if (result != null && result.files.single.path != null) {
+  Future<String?> _uploadFileToSupabase() async {
+    // 🌟 withData: true هي التي تجعل رفع الويب ينجح بدلاً من مسار الملف
+    FilePickerResult? result =
+        await FilePicker.platform.pickFiles(withData: true);
+
+    if (result != null) {
       setState(() => isUploading = true);
       try {
-        File file = File(result.files.single.path!);
         String fileName =
             "${DateTime.now().millisecondsSinceEpoch}_${result.files.single.name}";
-        Reference ref = FirebaseStorage.instance.ref(
-          'lesson_files/${widget.lessonId}/$fileName',
-        );
-        UploadTask uploadTask = ref.putFile(file);
-        TaskSnapshot snapshot = await uploadTask;
-        String downloadUrl = await snapshot.ref.getDownloadURL();
+        String storagePath = 'lesson_files/${widget.lessonId}/$fileName';
+
+        if (kIsWeb) {
+          Uint8List? fileBytes = result.files.single.bytes;
+          if (fileBytes != null) {
+            await Supabase.instance.client.storage
+                .from('jaafari_storage')
+                .uploadBinary(storagePath, fileBytes);
+          }
+        } else {
+          if (result.files.single.path != null) {
+            File file = File(result.files.single.path!);
+            await Supabase.instance.client.storage
+                .from('jaafari_storage')
+                .upload(storagePath, file);
+          }
+        }
+
+        String downloadUrl = Supabase.instance.client.storage
+            .from('jaafari_storage')
+            .getPublicUrl(storagePath);
         setState(() => isUploading = false);
         return downloadUrl;
       } catch (e) {
         setState(() => isUploading = false);
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text("فشل الرفع: $e")));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text("فشل الرفع: $e")));
       }
     }
     return null;
@@ -890,74 +886,64 @@ class _LessonContentPageState extends State<LessonContentPage> {
                 isExpanded: true,
                 items: [
                   DropdownMenuItem(
-                    value: 'text',
-                    child: Text(S.get('text_type')),
-                  ),
+                      value: 'text', child: Text(S.get('text_type'))),
                   DropdownMenuItem(
-                    value: 'file',
-                    child: Text(S.get('file_type')),
-                  ),
+                      value: 'file', child: Text(S.get('file_type')))
                 ],
                 onChanged: (v) => setDialogState(() => selectedType = v!),
               ),
               const SizedBox(height: 15),
               if (selectedType == 'text')
                 TextField(
-                  controller: ctrl,
-                  maxLines: 5,
-                  decoration: InputDecoration(
-                    labelText: S.get('content'),
-                    border: const OutlineInputBorder(),
-                  ),
-                )
+                    controller: ctrl,
+                    maxLines: 5,
+                    decoration: InputDecoration(
+                        labelText: S.get('content'),
+                        border: const OutlineInputBorder()))
               else
                 isUploading
                     ? const CircularProgressIndicator()
                     : ElevatedButton.icon(
                         onPressed: () async {
                           setDialogState(() => isUploading = true);
-                          String? fileUrl = await _uploadFile();
+                          String? fileUrl = await _uploadFileToSupabase();
                           setDialogState(() => isUploading = false);
 
                           if (fileUrl != null) {
-                            // بمجرد رفع الملف بنجاح، يتم حفظه مباشرة كعنصر محتوى
                             await FirebaseFirestore.instance
                                 .collection('lesson_contents')
                                 .add({
-                                  'lessonId': widget.lessonId,
-                                  'type': 'file',
-                                  'data': fileUrl,
-                                  'timestamp': FieldValue.serverTimestamp(),
-                                });
+                              'lessonId': widget.lessonId,
+                              'type': 'file',
+                              'data': fileUrl,
+                              'timestamp': FieldValue.serverTimestamp()
+                            });
                             if (mounted) Navigator.pop(ctx);
                           }
                         },
                         icon: const Icon(Icons.upload_file),
-                        label: Text(S.get('file_type')),
-                      ),
+                        label: Text(S.get('file_type'))),
             ],
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(c),
-              child: Text(S.get('cancel')),
-            ),
+                onPressed: () => Navigator.pop(c),
+                child: Text(S.get('cancel'))),
             if (selectedType == 'text')
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: widget.color,
-                  foregroundColor: Colors.white,
-                ),
+                    backgroundColor: widget.color,
+                    foregroundColor: Colors.white),
                 onPressed: () async {
                   if (ctrl.text.isNotEmpty) {
                     await FirebaseFirestore.instance
                         .collection('lesson_contents')
                         .add({
-                          'lessonId': widget.lessonId,
-                          'type': 'text',
-                          'data': ctrl.text,
-                          'timestamp': FieldValue.serverTimestamp(),
-                        });
+                      'lessonId': widget.lessonId,
+                      'type': 'text',
+                      'data': ctrl.text,
+                      'timestamp': FieldValue.serverTimestamp()
+                    });
                     if (mounted) Navigator.pop(context);
                   }
                 },
@@ -986,10 +972,9 @@ class _LessonContentPageState extends State<LessonContentPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.title),
-        backgroundColor: widget.color,
-        foregroundColor: Colors.white,
-      ),
+          title: Text(widget.title),
+          backgroundColor: widget.color,
+          foregroundColor: Colors.white),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('lesson_contents')
@@ -997,20 +982,14 @@ class _LessonContentPageState extends State<LessonContentPage> {
             .orderBy('timestamp')
             .snapshots(),
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
+          if (snapshot.connectionState == ConnectionState.waiting)
             return const Center(child: CircularProgressIndicator());
-          }
-          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          if (!snapshot.hasData || snapshot.data!.docs.isEmpty)
             return const Center(
-              child: Text(
-                "محتوى الدرس غير متوفر بعد.",
-                style: TextStyle(fontSize: 18),
-              ),
-            );
-          }
+                child: Text("محتوى الدرس غير متوفر بعد.",
+                    style: TextStyle(fontSize: 18)));
 
           var contents = snapshot.data!.docs;
-
           return ListView.builder(
             padding: const EdgeInsets.all(20),
             itemCount: contents.length,
@@ -1019,88 +998,64 @@ class _LessonContentPageState extends State<LessonContentPage> {
               String type = block['type'];
               String data = block['data'];
               String docId = contents[i].id;
-
               Widget contentWidget;
-
               if (type == 'file') {
-                // التعرف البسيط على الصور من خلال الرابط (الامتدادات الشائعة)
-                bool isImage =
-                    data.contains('.png') ||
+                bool isImage = data.contains('.png') ||
                     data.contains('.jpg') ||
                     data.contains('.jpeg') ||
                     data.contains('alt=media');
-
                 if (isImage) {
                   contentWidget = ClipRRect(
-                    borderRadius: BorderRadius.circular(15),
-                    child: Image.network(
-                      data,
-                      fit: BoxFit.cover,
-                      loadingBuilder: (c, child, progress) {
+                      borderRadius: BorderRadius.circular(15),
+                      child: Image.network(data, fit: BoxFit.cover,
+                          loadingBuilder: (c, child, progress) {
                         if (progress == null) return child;
                         return const Center(child: CircularProgressIndicator());
-                      },
-                    ),
-                  );
+                      }));
                 } else {
                   contentWidget = InkWell(
                     onTap: () => _launchURL(data),
                     child: Container(
                       height: 80,
                       decoration: BoxDecoration(
-                        color: widget.color.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(15),
-                        border: Border.all(color: widget.color),
-                      ),
+                          color: widget.color.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(15),
+                          border: Border.all(color: widget.color)),
                       child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.insert_drive_file,
-                            size: 30,
-                            color: widget.color,
-                          ),
-                          const SizedBox(width: 10),
-                          Text(
-                            S.get('open_file'),
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: widget.color,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.insert_drive_file,
+                                size: 30, color: widget.color),
+                            const SizedBox(width: 10),
+                            Text(S.get('open_file'),
+                                style: TextStyle(
+                                    fontSize: 16,
+                                    color: widget.color,
+                                    fontWeight: FontWeight.bold))
+                          ]),
                     ),
                   );
                 }
               } else {
-                contentWidget = Text(
-                  data,
-                  style: const TextStyle(fontSize: 18, height: 1.6),
-                );
+                contentWidget = Text(data,
+                    style: const TextStyle(fontSize: 18, height: 1.6));
               }
-
               return Padding(
                 padding: const EdgeInsets.only(bottom: 20),
                 child: isTeacherGlobal
-                    ? Stack(
-                        children: [
-                          Container(
+                    ? Stack(children: [
+                        Container(
                             width: double.infinity,
                             padding: const EdgeInsets.all(10),
-                            child: contentWidget,
-                          ),
-                          Positioned(
+                            child: contentWidget),
+                        Positioned(
                             top: 0,
                             left: 0,
                             child: IconButton(
-                              icon: const Icon(Icons.delete, color: Colors.red),
-                              onPressed: () => _deleteContent(docId),
-                            ),
-                          ),
-                        ],
-                      )
+                                icon:
+                                    const Icon(Icons.delete, color: Colors.red),
+                                onPressed: () => _deleteContent(docId)))
+                      ])
                     : contentWidget,
               );
             },
@@ -1112,49 +1067,39 @@ class _LessonContentPageState extends State<LessonContentPage> {
               onPressed: _addContentDialog,
               backgroundColor: widget.color,
               icon: const Icon(Icons.add, color: Colors.white),
-              label: Text(
-                S.get('add_content'),
-                style: const TextStyle(color: Colors.white),
-              ),
-            )
+              label: Text(S.get('add_content'),
+                  style: const TextStyle(color: Colors.white)))
           : null,
     );
   }
 }
 
-// --- 5. نظام الاختبارات المتقدم (مربوط بـ Firestore) ---
+// --- 5. نظام الاختبارات المتقدم (+ و - للاختبارات للحفاظ عليها) ---
 class QuizzesGridPage extends StatelessWidget {
   const QuizzesGridPage({super.key});
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          S.get('quiz_title'),
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-        centerTitle: true,
-      ),
+          title: Text(S.get('quiz_title'),
+              style: const TextStyle(fontWeight: FontWeight.bold)),
+          centerTitle: true),
       body: ListView.builder(
         padding: const EdgeInsets.all(10),
         itemCount: appSubjects.length,
         itemBuilder: (ctx, i) => Card(
           child: ListTile(
             leading: CircleAvatar(
-              backgroundColor: appSubjects[i].color,
-              child: Icon(appSubjects[i].icon, color: Colors.white),
-            ),
-            title: Text(
-              S.get(appSubjects[i].nameKey),
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
+                backgroundColor: appSubjects[i].color,
+                child: Icon(appSubjects[i].icon, color: Colors.white)),
+            title: Text(S.get(appSubjects[i].nameKey),
+                style: const TextStyle(fontWeight: FontWeight.bold)),
             trailing: const Icon(Icons.arrow_forward_ios, size: 16),
             onTap: () => Navigator.push(
-              ctx,
-              MaterialPageRoute(
-                builder: (c) => SubjectQuizzesListPage(subject: appSubjects[i]),
-              ),
-            ),
+                ctx,
+                MaterialPageRoute(
+                    builder: (c) =>
+                        SubjectQuizzesListPage(subject: appSubjects[i]))),
           ),
         ),
       ),
@@ -1165,7 +1110,6 @@ class QuizzesGridPage extends StatelessWidget {
 class SubjectQuizzesListPage extends StatefulWidget {
   final SubjectData subject;
   const SubjectQuizzesListPage({super.key, required this.subject});
-
   @override
   State<SubjectQuizzesListPage> createState() => _SubjectQuizzesListPageState();
 }
@@ -1178,21 +1122,18 @@ class _SubjectQuizzesListPageState extends State<SubjectQuizzesListPage> {
       builder: (c) => AlertDialog(
         title: Text(S.get('edit_title')),
         content: TextField(
-          controller: ctrl,
-          decoration: InputDecoration(labelText: S.get('new_title')),
-        ),
+            controller: ctrl,
+            decoration: InputDecoration(labelText: S.get('new_title'))),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(c),
-            child: Text(S.get('cancel')),
-          ),
+              onPressed: () => Navigator.pop(c), child: Text(S.get('cancel'))),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: widget.subject.color,
-              foregroundColor: Colors.white,
-            ),
+                backgroundColor: widget.subject.color,
+                foregroundColor: Colors.white),
             onPressed: () async {
               if (ctrl.text.isNotEmpty) {
+                // منع الحذف بسبب set باستخدام merge
                 await FirebaseFirestore.instance
                     .collection('quiz_metadata')
                     .doc(docId)
@@ -1207,66 +1148,113 @@ class _SubjectQuizzesListPageState extends State<SubjectQuizzesListPage> {
     );
   }
 
+  void _updateQuizCount(int newCount) async {
+    await FirebaseFirestore.instance
+        .collection('subject_config')
+        .doc("${widget.subject.id}_quiz")
+        .set({'quiz_count': newCount}, SetOptions(merge: true));
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          "${S.get('quiz_title')} - ${S.get(widget.subject.nameKey)}",
-        ),
-        backgroundColor: widget.subject.color,
-        foregroundColor: Colors.white,
-      ),
-      body: StreamBuilder<QuerySnapshot>(
+          title:
+              Text("${S.get('quiz_title')} - ${S.get(widget.subject.nameKey)}"),
+          backgroundColor: widget.subject.color,
+          foregroundColor: Colors.white),
+      body: StreamBuilder<DocumentSnapshot>(
         stream: FirebaseFirestore.instance
-            .collection('quiz_metadata')
-            .where('subjectId', isEqualTo: widget.subject.id)
+            .collection('subject_config')
+            .doc("${widget.subject.id}_quiz")
             .snapshots(),
-        builder: (context, snapshot) {
-          Map<String, String> customTitles = {};
-          if (snapshot.hasData) {
-            for (var doc in snapshot.data!.docs) {
-              var data = doc.data() as Map<String, dynamic>;
-              if (data.containsKey('custom_title')) {
-                customTitles[doc.id] = data['custom_title'];
-              }
-            }
+        builder: (context, configSnap) {
+          int currentCount = 15;
+          if (configSnap.hasData && configSnap.data!.exists) {
+            var data = configSnap.data!.data() as Map<String, dynamic>;
+            if (data.containsKey('quiz_count'))
+              currentCount = data['quiz_count'];
           }
 
-          return ListView.builder(
-            padding: const EdgeInsets.all(15),
-            itemCount: 15,
-            itemBuilder: (ctx, i) {
-              int lessonNum = i + 1;
-              String quizId = "${widget.subject.id}_quiz_$lessonNum";
-              String displayTitle =
-                  customTitles[quizId] ??
-                  "اختبار ${S.get('lesson')} $lessonNum";
+          return StreamBuilder<QuerySnapshot>(
+            stream: FirebaseFirestore.instance
+                .collection('quiz_metadata')
+                .where('subjectId', isEqualTo: widget.subject.id)
+                .snapshots(),
+            builder: (context, snapshot) {
+              Map<String, String> customTitles = {};
+              if (snapshot.hasData) {
+                for (var doc in snapshot.data!.docs) {
+                  var data = doc.data() as Map<String, dynamic>;
+                  if (data.containsKey('custom_title'))
+                    customTitles[doc.id] = data['custom_title'];
+                }
+              }
 
-              return Card(
-                child: ListTile(
-                  leading: const Icon(Icons.quiz, color: Colors.orange),
-                  title: Text(
-                    displayTitle,
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  trailing: isTeacherGlobal
-                      ? IconButton(
-                          icon: const Icon(Icons.edit, color: Colors.blueGrey),
-                          onPressed: () => _editQuizTitle(quizId, displayTitle),
-                        )
-                      : null,
-                  onTap: () => Navigator.push(
-                    ctx,
-                    MaterialPageRoute(
-                      builder: (_) => QuizPlayArea(
-                        quizId: quizId,
-                        color: widget.subject.color,
-                        title: displayTitle,
-                      ),
+              return Column(
+                children: [
+                  Expanded(
+                    child: ListView.builder(
+                      padding: const EdgeInsets.all(15),
+                      itemCount: currentCount,
+                      itemBuilder: (ctx, i) {
+                        int lessonNum = i + 1;
+                        String quizId = "${widget.subject.id}_quiz_$lessonNum";
+                        String displayTitle = customTitles[quizId] ??
+                            "اختبار ${S.get('lesson')} $lessonNum";
+
+                        return Card(
+                          child: ListTile(
+                            leading:
+                                const Icon(Icons.quiz, color: Colors.orange),
+                            title: Text(displayTitle,
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold)),
+                            trailing: isTeacherGlobal
+                                ? IconButton(
+                                    icon: const Icon(Icons.edit,
+                                        color: Colors.blueGrey),
+                                    onPressed: () =>
+                                        _editQuizTitle(quizId, displayTitle))
+                                : null,
+                            onTap: () => Navigator.push(
+                                ctx,
+                                MaterialPageRoute(
+                                    builder: (_) => QuizPlayArea(
+                                        quizId: quizId,
+                                        color: widget.subject.color,
+                                        title: displayTitle))),
+                          ),
+                        );
+                      },
                     ),
                   ),
-                ),
+                  if (isTeacherGlobal)
+                    Container(
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      color: Colors.grey.withOpacity(0.1),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          IconButton(
+                              icon: const Icon(Icons.remove_circle,
+                                  color: Colors.red, size: 35),
+                              onPressed: () {
+                                if (currentCount > 1)
+                                  _updateQuizCount(currentCount - 1);
+                              }),
+                          Text("الاختبارات الحالية: $currentCount",
+                              style: const TextStyle(
+                                  fontSize: 18, fontWeight: FontWeight.bold)),
+                          IconButton(
+                              icon: const Icon(Icons.add_circle,
+                                  color: Colors.green, size: 35),
+                              onPressed: () =>
+                                  _updateQuizCount(currentCount + 1)),
+                        ],
+                      ),
+                    )
+                ],
               );
             },
           );
@@ -1280,12 +1268,11 @@ class QuizPlayArea extends StatefulWidget {
   final String quizId;
   final Color color;
   final String title;
-  const QuizPlayArea({
-    super.key,
-    required this.quizId,
-    required this.color,
-    required this.title,
-  });
+  const QuizPlayArea(
+      {super.key,
+      required this.quizId,
+      required this.color,
+      required this.title});
   @override
   State<QuizPlayArea> createState() => _QuizPlayAreaState();
 }
@@ -1296,30 +1283,43 @@ class _QuizPlayAreaState extends State<QuizPlayArea> {
   bool isFinished = false;
   bool isUploadingImg = false;
 
-  Future<void> _uploadExamImage() async {
+  Future<void> _uploadExamImageSupabase() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
-      type: FileType.image,
-    );
-    if (result != null && result.files.single.path != null) {
+        type: FileType.image, withData: true); // withData إجباري للويب
+    if (result != null) {
       setState(() => isUploadingImg = true);
       try {
-        File file = File(result.files.single.path!);
         String fileName =
             "exam_${DateTime.now().millisecondsSinceEpoch}_${result.files.single.name}";
-        Reference ref = FirebaseStorage.instance.ref(
-          'quiz_images/${widget.quizId}/$fileName',
-        );
-        await ref.putFile(file);
-        String downloadUrl = await ref.getDownloadURL();
+        String storagePath = 'quiz_images/${widget.quizId}/$fileName';
 
+        if (kIsWeb) {
+          Uint8List? fileBytes = result.files.single.bytes;
+          if (fileBytes != null) {
+            await Supabase.instance.client.storage
+                .from('jaafari_storage')
+                .uploadBinary(storagePath, fileBytes);
+          }
+        } else {
+          if (result.files.single.path != null) {
+            File file = File(result.files.single.path!);
+            await Supabase.instance.client.storage
+                .from('jaafari_storage')
+                .upload(storagePath, file);
+          }
+        }
+
+        String downloadUrl = Supabase.instance.client.storage
+            .from('jaafari_storage')
+            .getPublicUrl(storagePath);
+        // حماية الصورة القديمة بالـ merge
         await FirebaseFirestore.instance
             .collection('quiz_metadata')
             .doc(widget.quizId)
             .set({'exam_image': downloadUrl}, SetOptions(merge: true));
       } catch (e) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text("خطأ في الرفع: $e")));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text("خطأ في الرفع: $e")));
       }
       setState(() => isUploadingImg = false);
     }
@@ -1343,57 +1343,49 @@ class _QuizPlayAreaState extends State<QuizPlayArea> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 TextField(
-                  controller: qCtrl,
-                  decoration: InputDecoration(labelText: S.get('q_text')),
-                ),
+                    controller: qCtrl,
+                    decoration: InputDecoration(labelText: S.get('q_text'))),
                 TextField(
-                  controller: opt1,
-                  decoration: InputDecoration(labelText: "${S.get('opt')} 1"),
-                ),
+                    controller: opt1,
+                    decoration:
+                        InputDecoration(labelText: "${S.get('opt')} 1")),
                 TextField(
-                  controller: opt2,
-                  decoration: InputDecoration(labelText: "${S.get('opt')} 2"),
-                ),
+                    controller: opt2,
+                    decoration:
+                        InputDecoration(labelText: "${S.get('opt')} 2")),
                 TextField(
-                  controller: opt3,
-                  decoration: InputDecoration(labelText: "${S.get('opt')} 3"),
-                ),
+                    controller: opt3,
+                    decoration:
+                        InputDecoration(labelText: "${S.get('opt')} 3")),
                 TextField(
-                  controller: opt4,
-                  decoration: InputDecoration(labelText: "${S.get('opt')} 4"),
-                ),
+                    controller: opt4,
+                    decoration:
+                        InputDecoration(labelText: "${S.get('opt')} 4")),
                 DropdownButton<int>(
-                  value: correctOpt,
-                  items: [1, 2, 3, 4]
-                      .map(
-                        (e) => DropdownMenuItem(
-                          value: e,
-                          child: Text("الجواب الصحيح: $e"),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: (v) => setStateDialog(() => correctOpt = v!),
-                ),
+                    value: correctOpt,
+                    items: [1, 2, 3, 4]
+                        .map((e) => DropdownMenuItem(
+                            value: e, child: Text("الجواب الصحيح: $e")))
+                        .toList(),
+                    onChanged: (v) => setStateDialog(() => correctOpt = v!)),
               ],
             ),
           ),
           actions: [
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: widget.color,
-                foregroundColor: Colors.white,
-              ),
+                  backgroundColor: widget.color, foregroundColor: Colors.white),
               onPressed: () async {
                 if (qCtrl.text.isNotEmpty && opt1.text.isNotEmpty) {
                   await FirebaseFirestore.instance
                       .collection('quiz_questions')
                       .add({
-                        'quizId': widget.quizId,
-                        'q': qCtrl.text,
-                        'opts': [opt1.text, opt2.text, opt3.text, opt4.text],
-                        'ans': correctOpt - 1,
-                        'timestamp': FieldValue.serverTimestamp(),
-                      });
+                    'quizId': widget.quizId,
+                    'q': qCtrl.text,
+                    'opts': [opt1.text, opt2.text, opt3.text, opt4.text],
+                    'ans': correctOpt - 1,
+                    'timestamp': FieldValue.serverTimestamp()
+                  });
                   if (mounted) Navigator.pop(context);
                 }
               },
@@ -1406,12 +1398,9 @@ class _QuizPlayAreaState extends State<QuizPlayArea> {
   }
 
   void _answerQuestion(
-    int selectedIndex,
-    List<QueryDocumentSnapshot> questions,
-  ) {
+      int selectedIndex, List<QueryDocumentSnapshot> questions) {
     var qData = questions[currentQuestionIndex].data() as Map<String, dynamic>;
     if (selectedIndex == qData['ans']) score++;
-
     if (currentQuestionIndex < questions.length - 1) {
       setState(() => currentQuestionIndex++);
     } else {
@@ -1431,13 +1420,11 @@ class _QuizPlayAreaState extends State<QuizPlayArea> {
             isUploadingImg
                 ? const Padding(
                     padding: EdgeInsets.all(15.0),
-                    child: CircularProgressIndicator(color: Colors.white),
-                  )
+                    child: CircularProgressIndicator(color: Colors.white))
                 : IconButton(
                     icon: const Icon(Icons.add_photo_alternate),
                     tooltip: S.get('exam_img'),
-                    onPressed: _uploadExamImage,
-                  ),
+                    onPressed: _uploadExamImageSupabase)
         ],
       ),
       body: StreamBuilder<DocumentSnapshot>(
@@ -1452,7 +1439,6 @@ class _QuizPlayAreaState extends State<QuizPlayArea> {
             if (mData.containsKey('exam_image'))
               examImageUrl = mData['exam_image'];
           }
-
           return StreamBuilder<QuerySnapshot>(
             stream: FirebaseFirestore.instance
                 .collection('quiz_questions')
@@ -1462,47 +1448,31 @@ class _QuizPlayAreaState extends State<QuizPlayArea> {
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting)
                 return const Center(child: CircularProgressIndicator());
-
               var questions = snapshot.data?.docs ?? [];
-
-              if (questions.isEmpty) {
+              if (questions.isEmpty)
                 return Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
+                    child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
                       if (examImageUrl != null)
                         Padding(
-                          padding: const EdgeInsets.all(20),
-                          child: Image.network(examImageUrl, height: 200),
-                        ),
+                            padding: const EdgeInsets.all(20),
+                            child: Image.network(examImageUrl, height: 200)),
                       Text(
-                        isTeacherGlobal
-                            ? "لا توجد أسئلة، أضف أسئلة الآن"
-                            : "الاختبار غير متاح بعد",
-                        style: const TextStyle(fontSize: 18),
-                      ),
-                    ],
-                  ),
-                );
-              }
-
-              if (isFinished) {
+                          isTeacherGlobal
+                              ? "لا توجد أسئلة، أضف أسئلة الآن"
+                              : "الاختبار غير متاح بعد",
+                          style: const TextStyle(fontSize: 18))
+                    ]));
+              if (isFinished)
                 return Center(
-                  child: Text(
-                    "${S.get('score')}: $score / ${questions.length}",
-                    style: const TextStyle(
-                      fontSize: 26,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                );
-              }
-
-              var currentQData =
-                  questions[currentQuestionIndex].data()
-                      as Map<String, dynamic>;
+                    child: Text(
+                        "${S.get('score')}: $score / ${questions.length}",
+                        style: const TextStyle(
+                            fontSize: 26, fontWeight: FontWeight.bold)));
+              var currentQData = questions[currentQuestionIndex].data()
+                  as Map<String, dynamic>;
               List<dynamic> options = currentQData['opts'];
-
               return SingleChildScrollView(
                 padding: const EdgeInsets.all(20),
                 child: Column(
@@ -1510,42 +1480,33 @@ class _QuizPlayAreaState extends State<QuizPlayArea> {
                   children: [
                     if (examImageUrl != null)
                       Padding(
-                        padding: const EdgeInsets.only(bottom: 20),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(15),
-                          child: Image.network(examImageUrl, fit: BoxFit.cover),
-                        ),
-                      ),
+                          padding: const EdgeInsets.only(bottom: 20),
+                          child: ClipRRect(
+                              borderRadius: BorderRadius.circular(15),
+                              child: Image.network(examImageUrl,
+                                  fit: BoxFit.cover))),
                     Text(
-                      "السؤال ${currentQuestionIndex + 1}/${questions.length}",
-                      style: const TextStyle(fontSize: 18, color: Colors.grey),
-                    ),
+                        "السؤال ${currentQuestionIndex + 1}/${questions.length}",
+                        style:
+                            const TextStyle(fontSize: 18, color: Colors.grey)),
                     const SizedBox(height: 20),
-                    Text(
-                      currentQData['q'],
-                      style: const TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                    Text(currentQData['q'],
+                        style: const TextStyle(
+                            fontSize: 22, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 30),
                     ...List.generate(
-                      options.length,
-                      (index) => Padding(
-                        padding: const EdgeInsets.only(bottom: 10),
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            minimumSize: const Size(double.infinity, 55),
-                            alignment: Alignment.centerRight,
-                          ),
-                          onPressed: () => _answerQuestion(index, questions),
-                          child: Text(
-                            options[index],
-                            style: const TextStyle(fontSize: 18),
-                          ),
-                        ),
-                      ),
-                    ),
+                        options.length,
+                        (index) => Padding(
+                            padding: const EdgeInsets.only(bottom: 10),
+                            child: ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                    minimumSize:
+                                        const Size(double.infinity, 55),
+                                    alignment: Alignment.centerRight),
+                                onPressed: () =>
+                                    _answerQuestion(index, questions),
+                                child: Text(options[index],
+                                    style: const TextStyle(fontSize: 18))))),
                   ],
                 ),
               );
@@ -1558,11 +1519,8 @@ class _QuizPlayAreaState extends State<QuizPlayArea> {
               onPressed: _addQuestionDialog,
               backgroundColor: widget.color,
               icon: const Icon(Icons.add, color: Colors.white),
-              label: Text(
-                S.get('add_q'),
-                style: const TextStyle(color: Colors.white),
-              ),
-            )
+              label: Text(S.get('add_q'),
+                  style: const TextStyle(color: Colors.white)))
           : null,
     );
   }
@@ -1571,13 +1529,11 @@ class _QuizPlayAreaState extends State<QuizPlayArea> {
 // --- 6. حسابي والدعم ---
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
-
   void _contactSupport() async {
     final Uri emailLaunchUri = Uri(
-      scheme: 'mailto',
-      path: 'bilal38jaafari@gmail.com',
-      queryParameters: {'subject': 'طلب دعم من تطبيق Jaafari Guide'},
-    );
+        scheme: 'mailto',
+        path: 'bilal38jaafari@gmail.com',
+        queryParameters: {'subject': 'طلب دعم من تطبيق Jaafari Guide'});
     try {
       await launchUrl(emailLaunchUri);
     } catch (e) {
@@ -1589,112 +1545,80 @@ class ProfilePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          S.get('profile'),
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-        centerTitle: true,
-      ),
+          title: Text(S.get('profile'),
+              style: const TextStyle(fontWeight: FontWeight.bold)),
+          centerTitle: true),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
           const CircleAvatar(
-            radius: 50,
-            backgroundColor: Colors.deepPurple,
-            child: Icon(Icons.person, size: 50, color: Colors.white),
-          ),
+              radius: 50,
+              backgroundColor: Colors.deepPurple,
+              child: Icon(Icons.person, size: 50, color: Colors.white)),
           const SizedBox(height: 15),
           Center(
-            child: Text(
-              currentUserNameGlobal,
-              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-            ),
-          ),
+              child: Text(currentUserNameGlobal,
+                  style: const TextStyle(
+                      fontSize: 22, fontWeight: FontWeight.bold))),
           Center(
-            child: Text(
-              currentUserEmailGlobal,
-              style: const TextStyle(fontSize: 16, color: Colors.grey),
-            ),
-          ),
+              child: Text(currentUserEmailGlobal,
+                  style: const TextStyle(fontSize: 16, color: Colors.grey))),
           Center(
-            child: Text(
-              isTeacherGlobal ? "أستاذ / مدير 👨‍🏫" : "تلميذ 🎓",
-              style: TextStyle(
-                color: isTeacherGlobal ? Colors.redAccent : Colors.blueAccent,
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
-              ),
-            ),
-          ),
+              child: Text(isTeacherGlobal ? "أستاذ / مدير 👨‍🏫" : "تلميذ 🎓",
+                  style: TextStyle(
+                      color: isTeacherGlobal
+                          ? Colors.redAccent
+                          : Colors.blueAccent,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18))),
           const SizedBox(height: 30),
-
           ListTile(
-            leading: const Icon(Icons.dark_mode),
-            title: Text(
-              S.get('dark_mode'),
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            trailing: Switch(
-              value: themeNotifier.value == ThemeMode.dark,
-              onChanged: (v) =>
-                  themeNotifier.value = v ? ThemeMode.dark : ThemeMode.light,
-            ),
-          ),
+              leading: const Icon(Icons.dark_mode),
+              title: Text(S.get('dark_mode'),
+                  style: const TextStyle(fontWeight: FontWeight.bold)),
+              trailing: Switch(
+                  value: themeNotifier.value == ThemeMode.dark,
+                  onChanged: (v) => themeNotifier.value =
+                      v ? ThemeMode.dark : ThemeMode.light)),
           ListTile(
             leading: const Icon(Icons.language),
-            title: Text(
-              S.get('lang'),
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
+            title: Text(S.get('lang'),
+                style: const TextStyle(fontWeight: FontWeight.bold)),
             trailing: const Icon(Icons.arrow_drop_down),
             onTap: () => showModalBottomSheet(
-              context: context,
-              builder: (c) => Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  ListTile(
-                    title: const Text("العربية"),
-                    onTap: () {
-                      localeNotifier.value = const Locale('ar');
-                      Navigator.pop(context);
-                    },
-                  ),
-                  ListTile(
-                    title: const Text("English"),
-                    onTap: () {
-                      localeNotifier.value = const Locale('en');
-                      Navigator.pop(context);
-                    },
-                  ),
-                ],
-              ),
-            ),
+                context: context,
+                builder: (c) =>
+                    Column(mainAxisSize: MainAxisSize.min, children: [
+                      ListTile(
+                          title: const Text("العربية"),
+                          onTap: () {
+                            localeNotifier.value = const Locale('ar');
+                            Navigator.pop(context);
+                          }),
+                      ListTile(
+                          title: const Text("English"),
+                          onTap: () {
+                            localeNotifier.value = const Locale('en');
+                            Navigator.pop(context);
+                          })
+                    ])),
           ),
           ListTile(
-            leading: const Icon(Icons.support_agent),
-            title: Text(
-              S.get('support'),
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            onTap: _contactSupport,
-          ),
+              leading: const Icon(Icons.support_agent),
+              title: Text(S.get('support'),
+                  style: const TextStyle(fontWeight: FontWeight.bold)),
+              onTap: _contactSupport),
           const Divider(height: 40),
           ListTile(
             leading: const Icon(Icons.logout, color: Colors.red),
-            title: Text(
-              S.get('logout'),
-              style: const TextStyle(
-                color: Colors.red,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+            title: Text(S.get('logout'),
+                style: const TextStyle(
+                    color: Colors.red, fontWeight: FontWeight.bold)),
             onTap: () async {
               await FirebaseAuth.instance.signOut();
               isTeacherGlobal = false;
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (_) => const AuthWrapper()),
-              );
+              Navigator.pushReplacement(context,
+                  MaterialPageRoute(builder: (_) => const AuthWrapper()));
             },
           ),
         ],
