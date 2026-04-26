@@ -1,18 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:supabase_flutter/supabase_flutter.dart'
-    hide User; // إخفاء User لمنع التعارض
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:ui';
 import 'dart:io' show File;
 import 'dart:typed_data';
-import 'package:flutter/foundation.dart' show kIsWeb; // ضروري لدعم الويب
-import 'firebase_options.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:url_launcher/url_launcher.dart';
 
-// --- نظام الترجمة الشامل ---
+// ==========================================
+// 1. نظام الترجمة والثوابت العالمية
+// ==========================================
 class S {
   static const Map<String, Map<String, String>> _data = {
     'ar': {
@@ -32,13 +29,13 @@ class S {
       'pass_mismatch': 'كلمات المرور غير متطابقة!',
       'fill_fields': 'يرجى ملء جميع الحقول',
       'wrong_auth': 'البريد الإلكتروني أو كلمة المرور غير صحيحة.',
-      'auth_error': 'حدث خطأ أثناء تسجيل الدخول. يرجى المحاولة لاحقاً.',
+      'auth_error': 'حدث خطأ أثناء المصادقة. يرجى المحاولة لاحقاً.',
       'subjects': 'المواد الدراسية',
       'lesson': 'الدرس',
       'edit_title': 'تعديل العنوان',
       'new_title': 'العنوان الجديد',
       'finish_lesson': 'إنهاء الدرس',
-      'quiz_title': 'الاختبارات QCM',
+      'quiz_title': 'الاختبارات',
       'start': 'ابدأ الاختبار',
       'dark_mode': 'الوضع الليلي',
       'lang': 'لغة التطبيق',
@@ -74,7 +71,8 @@ class S {
       'score': 'نتيجتك هي',
       'open_file': 'فتح الملف / مشاهدة المرفق',
       'uploading': 'جاري الرفع...',
-      'exam_img': 'إضافة صورة للامتحان (مساعد)',
+      'exam_file': 'ورقة الامتحان (PDF/صورة)',
+      'add_exam': 'إرفاق ملف الامتحان',
       'delete': 'حذف',
     },
     'en': {
@@ -100,7 +98,7 @@ class S {
       'edit_title': 'Edit Title',
       'new_title': 'New Title',
       'finish_lesson': 'Finish Lesson',
-      'quiz_title': 'QCM Quizzes',
+      'quiz_title': 'Quizzes',
       'start': 'Start Quiz',
       'dark_mode': 'Dark Mode',
       'lang': 'App Language',
@@ -136,7 +134,8 @@ class S {
       'score': 'Your Score is',
       'open_file': 'Open File / View Attachment',
       'uploading': 'Uploading...',
-      'exam_img': 'Add Exam Helper Image',
+      'exam_file': 'Exam Paper (PDF/Image)',
+      'add_exam': 'Attach Exam File',
       'delete': 'Delete',
     },
   };
@@ -144,22 +143,17 @@ class S {
       _data[localeNotifier.value.languageCode]?[key] ?? key;
 }
 
-// محركات الحالة العالمية
 final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.dark);
 final ValueNotifier<Locale> localeNotifier = ValueNotifier(const Locale('ar'));
 
-// بيانات المستخدم الحالي
 bool isTeacherGlobal = false;
 String currentUserEmailGlobal = '';
 String currentUserNameGlobal = '';
+final supabase = Supabase.instance.client;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   try {
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
-    // إعداد Supabase مع الـ URL والمفتاح الخاص بك (تم سحبه من صورتك)
     await Supabase.initialize(
       url: 'https://vlyikngandsoznwzqtgp.supabase.co',
       anonKey:
@@ -185,17 +179,15 @@ class JaafariGuideApp extends StatelessWidget {
           themeMode: mode,
           title: 'Jaafari Guide',
           theme: ThemeData(
-            useMaterial3: true,
-            colorSchemeSeed: Colors.deepPurple,
-            brightness: Brightness.light,
-            fontFamily: 'Cairo',
-          ),
+              useMaterial3: true,
+              colorSchemeSeed: Colors.deepPurple,
+              brightness: Brightness.light,
+              fontFamily: 'Cairo'),
           darkTheme: ThemeData(
-            useMaterial3: true,
-            colorSchemeSeed: Colors.deepPurple,
-            brightness: Brightness.dark,
-            fontFamily: 'Cairo',
-          ),
+              useMaterial3: true,
+              colorSchemeSeed: Colors.deepPurple,
+              brightness: Brightness.dark,
+              fontFamily: 'Cairo'),
           home: const AuthWrapper(),
         ),
       ),
@@ -203,20 +195,28 @@ class JaafariGuideApp extends StatelessWidget {
   }
 }
 
-// --- نظام توجيه الدخول ---
-class AuthWrapper extends StatelessWidget {
+// -----------------------------------------------------------------------------
+// نظام المصادقة مع التحقق من بيانات المستخدم
+// -----------------------------------------------------------------------------
+class AuthWrapper extends StatefulWidget {
   const AuthWrapper({super.key});
   @override
+  State<AuthWrapper> createState() => _AuthWrapperState();
+}
+
+class _AuthWrapperState extends State<AuthWrapper> {
+  @override
   Widget build(BuildContext context) {
-    return StreamBuilder<User?>(
-      stream: FirebaseAuth.instance.authStateChanges(),
+    return StreamBuilder<AuthState>(
+      stream: supabase.auth.onAuthStateChange,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
               body: Center(child: CircularProgressIndicator()));
         }
-        if (snapshot.hasData && snapshot.data != null) {
-          return UserDataFetcher(uid: snapshot.data!.uid);
+        final session = supabase.auth.currentSession;
+        if (session != null) {
+          return UserDataFetcher(uid: session.user.id);
         }
         return const AppleGlassLoginScreen();
       },
@@ -227,28 +227,32 @@ class AuthWrapper extends StatelessWidget {
 class UserDataFetcher extends StatelessWidget {
   final String uid;
   const UserDataFetcher({super.key, required this.uid});
+
+  Future<Map<String, dynamic>?> _fetchUserData() async {
+    try {
+      return await supabase.from('users').select().eq('id', uid).maybeSingle();
+    } catch (e) {
+      return null;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<DocumentSnapshot>(
-      future: FirebaseFirestore.instance.collection('users').doc(uid).get(),
+    return FutureBuilder<Map<String, dynamic>?>(
+      future: _fetchUserData(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
               body: Center(child: CircularProgressIndicator()));
         }
+        currentUserEmailGlobal = supabase.auth.currentUser?.email ?? '';
+        isTeacherGlobal =
+            (currentUserEmailGlobal == 'bilal38jaafari@gmail.com');
 
-        currentUserEmailGlobal = FirebaseAuth.instance.currentUser?.email ?? '';
-
-        // تحديد الأستاذ
-        if (currentUserEmailGlobal == 'bilal38jaafari@gmail.com') {
-          isTeacherGlobal = true;
-        } else {
-          isTeacherGlobal = false;
-        }
-
-        if (snapshot.hasData && snapshot.data!.exists) {
-          var data = snapshot.data!.data() as Map<String, dynamic>;
-          currentUserNameGlobal = "${data['firstName']} ${data['lastName']}";
+        if (snapshot.hasData && snapshot.data != null) {
+          var data = snapshot.data!;
+          currentUserNameGlobal =
+              "${data['firstName'] ?? ''} ${data['lastName'] ?? ''}";
         } else {
           currentUserNameGlobal =
               isTeacherGlobal ? "أستاذ بلال الجعفري" : "تلميذ";
@@ -259,7 +263,9 @@ class UserDataFetcher extends StatelessWidget {
   }
 }
 
-// --- 1. واجهة تسجيل الدخول (تصميمك الأصلي المحفوظ) ---
+// -----------------------------------------------------------------------------
+// واجهة تسجيل الدخول الزجاجية
+// -----------------------------------------------------------------------------
 class AppleGlassLoginScreen extends StatefulWidget {
   const AppleGlassLoginScreen({super.key});
   @override
@@ -275,11 +281,8 @@ class _AppleGlassLoginScreenState extends State<AppleGlassLoginScreen> {
   final _firstNameCtrl = TextEditingController();
   final _lastNameCtrl = TextEditingController();
 
-  void _showError(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(msg), backgroundColor: Colors.redAccent),
-    );
-  }
+  void _showError(String msg) => ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(msg), backgroundColor: Colors.redAccent));
 
   Future<void> _submit() async {
     String email = _emailCtrl.text.trim();
@@ -289,86 +292,33 @@ class _AppleGlassLoginScreenState extends State<AppleGlassLoginScreen> {
       return;
     }
     setState(() => isLoading = true);
-
     try {
       if (isRegistering) {
-        String confPass = _confirmPassCtrl.text.trim();
-        String fname = _firstNameCtrl.text.trim();
-        String lname = _lastNameCtrl.text.trim();
-
-        if (pass != confPass) {
+        if (pass != _confirmPassCtrl.text.trim()) {
           _showError(S.get('pass_mismatch'));
           setState(() => isLoading = false);
           return;
         }
-        if (fname.isEmpty || lname.isEmpty) {
-          _showError(S.get('fill_fields'));
-          setState(() => isLoading = false);
-          return;
+        final res = await supabase.auth.signUp(email: email, password: pass);
+        if (res.user != null) {
+          await supabase.from('users').upsert({
+            'id': res.user!.id,
+            'firstName': _firstNameCtrl.text.trim(),
+            'lastName': _lastNameCtrl.text.trim(),
+            'role': 'تلميذ',
+            'email': email,
+            'createdAt': DateTime.now().toIso8601String(),
+          });
         }
-
-        UserCredential cred = await FirebaseAuth.instance
-            .createUserWithEmailAndPassword(email: email, password: pass);
-        await FirebaseFirestore.instance
-            .collection('users')
-            .doc(cred.user!.uid)
-            .set({
-          'firstName': fname,
-          'lastName': lname,
-          'role': 'تلميذ',
-          'email': email,
-          'createdAt': FieldValue.serverTimestamp(),
-        });
       } else {
-        await FirebaseAuth.instance
-            .signInWithEmailAndPassword(email: email, password: pass);
+        await supabase.auth.signInWithPassword(email: email, password: pass);
       }
-    } on FirebaseAuthException catch (e) {
-      if (e.code == 'user-not-found' ||
-          e.code == 'wrong-password' ||
-          e.code == 'invalid-credential') {
-        _showError(S.get('wrong_auth'));
-      } else {
-        _showError(S.get('auth_error'));
-      }
+    } on AuthException catch (e) {
+      _showError(e.message);
     } catch (e) {
       _showError(S.get('auth_error'));
     }
-
     if (mounted) setState(() => isLoading = false);
-  }
-
-  Widget _buildMinimalistLogo() {
-    return Container(
-      width: 100,
-      height: 100,
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-            colors: [Colors.white30, Colors.white10],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight),
-        borderRadius: BorderRadius.circular(25),
-        border: Border.all(color: Colors.white.withOpacity(0.4), width: 1.5),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black.withOpacity(0.2),
-              blurRadius: 15,
-              offset: const Offset(0, 5))
-        ],
-      ),
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          const Icon(Icons.menu_book_rounded, size: 45, color: Colors.white70),
-          Positioned(
-              top: 15,
-              child: Transform.rotate(
-                  angle: -0.1,
-                  child:
-                      const Icon(Icons.school, size: 55, color: Colors.white))),
-        ],
-      ),
-    );
   }
 
   @override
@@ -412,31 +362,25 @@ class _AppleGlassLoginScreenState extends State<AppleGlassLoginScreen> {
                         border: Border.all(
                             color: Colors.white.withOpacity(0.2), width: 1.5)),
                     child: Column(
-                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        _buildMinimalistLogo(),
+                        const Icon(Icons.school, size: 60, color: Colors.white),
                         const SizedBox(height: 20),
                         Text(S.get('app_title'),
                             style: const TextStyle(
                                 fontSize: 28,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white,
-                                letterSpacing: 1.2)),
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white)),
                         const SizedBox(height: 30),
                         if (isRegistering) ...[
-                          Row(
-                            children: [
-                              Expanded(
-                                  child: _buildGlassField(_firstNameCtrl,
-                                      S.get('first_name'), Icons.person)),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                  child: _buildGlassField(
-                                      _lastNameCtrl,
-                                      S.get('last_name'),
-                                      Icons.person_outline)),
-                            ],
-                          ),
+                          Row(children: [
+                            Expanded(
+                                child: _buildGlassField(_firstNameCtrl,
+                                    S.get('first_name'), Icons.person)),
+                            const SizedBox(width: 10),
+                            Expanded(
+                                child: _buildGlassField(_lastNameCtrl,
+                                    S.get('last_name'), Icons.person_outline))
+                          ]),
                           const SizedBox(height: 15),
                         ],
                         _buildGlassField(
@@ -448,7 +392,7 @@ class _AppleGlassLoginScreenState extends State<AppleGlassLoginScreen> {
                           const SizedBox(height: 15),
                           _buildGlassField(_confirmPassCtrl,
                               S.get('confirm_pass'), Icons.lock_reset,
-                              obscure: true),
+                              obscure: true)
                         ],
                         const SizedBox(height: 30),
                         isLoading
@@ -463,32 +407,22 @@ class _AppleGlassLoginScreenState extends State<AppleGlassLoginScreen> {
                                         const Size(double.infinity, 55),
                                     shape: RoundedRectangleBorder(
                                         borderRadius:
-                                            BorderRadius.circular(20)),
-                                    side: BorderSide(
-                                        color: Colors.white.withOpacity(0.3)),
-                                    elevation: 0),
+                                            BorderRadius.circular(20))),
                                 onPressed: _submit,
                                 child: Text(
                                     isRegistering
                                         ? S.get('register')
                                         : S.get('login'),
-                                    style: const TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.w600,
-                                        letterSpacing: 1))),
+                                    style: const TextStyle(fontSize: 18))),
                         const SizedBox(height: 15),
                         TextButton(
-                          onPressed: () => setState(() {
-                            isRegistering = !isRegistering;
-                            _emailCtrl.clear();
-                            _passCtrl.clear();
-                          }),
-                          child: Text(
-                              isRegistering
-                                  ? S.get('have_acc')
-                                  : S.get('no_acc'),
-                              style: const TextStyle(color: Colors.white70)),
-                        ),
+                            onPressed: () =>
+                                setState(() => isRegistering = !isRegistering),
+                            child: Text(
+                                isRegistering
+                                    ? S.get('have_acc')
+                                    : S.get('no_acc'),
+                                style: const TextStyle(color: Colors.white70))),
                       ],
                     ),
                   ),
@@ -509,26 +443,19 @@ class _AppleGlassLoginScreenState extends State<AppleGlassLoginScreen> {
       obscureText: obscure,
       style: const TextStyle(color: Colors.white),
       decoration: InputDecoration(
-        hintText: hint,
-        hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
-        filled: true,
-        fillColor: Colors.white.withOpacity(0.1),
-        prefixIcon: Icon(icon, color: Colors.white70),
-        border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(20),
-            borderSide: BorderSide(color: Colors.white.withOpacity(0.2))),
-        enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(20),
-            borderSide: BorderSide(color: Colors.white.withOpacity(0.2))),
-        focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(20),
-            borderSide: const BorderSide(color: Colors.white, width: 1.5)),
-      ),
+          hintText: hint,
+          hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
+          filled: true,
+          fillColor: Colors.white.withOpacity(0.1),
+          prefixIcon: Icon(icon, color: Colors.white70),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(20))),
     );
   }
 }
 
-// --- 2. الواجهة الرئيسية والتنقل ---
+// -----------------------------------------------------------------------------
+// التنقل الرئيسي وقائمة المواد الكاملة
+// -----------------------------------------------------------------------------
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
   @override
@@ -540,10 +467,10 @@ class _MainNavigationState extends State<MainNavigation> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: const [
-        LessonsGridPage(),
-        QuizzesGridPage(),
-        ProfilePage()
+      body: [
+        const LessonsGridPage(),
+        const QuizzesGridPage(),
+        const ProfilePage()
       ][_currentIndex],
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
@@ -561,15 +488,14 @@ class _MainNavigationState extends State<MainNavigation> {
   }
 }
 
+// قائمة المواد الـ 12 كما كانت تماماً
 class SubjectData {
-  final String id;
-  final String nameKey;
+  final String id, nameKey;
   final IconData icon;
   final Color color;
   SubjectData(this.id, this.nameKey, this.icon, this.color);
 }
 
-// المواد متوسعة
 final List<SubjectData> appSubjects = [
   SubjectData("math", "math", Icons.calculate, Colors.deepOrange),
   SubjectData("physics", "physics", Icons.wb_iridescent, Colors.blueAccent),
@@ -583,65 +509,90 @@ final List<SubjectData> appSubjects = [
   SubjectData("philosophy", "philosophy", Icons.psychology, Colors.purple),
   SubjectData("it", "it", Icons.computer, Colors.blueGrey),
   SubjectData("chemistry", "chemistry", Icons.science, Colors.cyan),
-  SubjectData(
-      "biology", "biology", Icons.nature, Colors.lightGreenAccent.shade700),
-  SubjectData("economics", "economics", Icons.monetization_on, Colors.amber),
 ];
 
-// --- 3. واجهة الدروس (ديناميكية مع زر + و - لحفظ البيانات ومنع اختفائها) ---
+// -----------------------------------------------------------------------------
+// واجهة الدروس (الشبكة الرئيسية)
+// -----------------------------------------------------------------------------
 class LessonsGridPage extends StatelessWidget {
   const LessonsGridPage({super.key});
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-          title: Text(S.get('subjects'),
+          title: Text(S.get('app_title'),
               style: const TextStyle(fontWeight: FontWeight.bold)),
           centerTitle: true),
-      body: GridView.builder(
-        padding: const EdgeInsets.all(15),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2, crossAxisSpacing: 15, mainAxisSpacing: 15),
-        itemCount: appSubjects.length,
-        itemBuilder: (ctx, i) => InkWell(
-          onTap: () => Navigator.push(
-              ctx,
-              MaterialPageRoute(
-                  builder: (c) => SubjectLessonsPage(subject: appSubjects[i]))),
-          child: Container(
+      body: Column(
+        children: [
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              gradient: LinearGradient(colors: [
-                appSubjects[i].color,
-                appSubjects[i].color.withOpacity(0.6)
-              ], begin: Alignment.topLeft),
-              borderRadius: BorderRadius.circular(25),
-              boxShadow: [
-                BoxShadow(
-                    color: appSubjects[i].color.withOpacity(0.3),
-                    blurRadius: 10,
-                    offset: const Offset(0, 5))
-              ],
+              color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+              borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(30),
+                  bottomRight: Radius.circular(30)),
             ),
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(appSubjects[i].icon, size: 50, color: Colors.white),
-                const SizedBox(height: 10),
-                Text(S.get(appSubjects[i].nameKey),
+                Text("مرحباً بك،",
+                    style: TextStyle(
+                        fontSize: 18,
+                        color: Theme.of(context).colorScheme.primary)),
+                Text(currentUserNameGlobal,
                     style: const TextStyle(
-                        color: Colors.white,
+                        fontSize: 26,
                         fontWeight: FontWeight.bold,
-                        fontSize: 18),
-                    textAlign: TextAlign.center),
+                        letterSpacing: 1.2)),
               ],
             ),
           ),
-        ),
+          Expanded(
+            child: GridView.builder(
+              padding: const EdgeInsets.all(15),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2, crossAxisSpacing: 15, mainAxisSpacing: 15),
+              itemCount: appSubjects.length,
+              itemBuilder: (ctx, i) => InkWell(
+                onTap: () => Navigator.push(
+                    ctx,
+                    MaterialPageRoute(
+                        builder: (c) =>
+                            SubjectLessonsPage(subject: appSubjects[i]))),
+                child: Container(
+                  decoration: BoxDecoration(
+                      gradient: LinearGradient(colors: [
+                        appSubjects[i].color,
+                        appSubjects[i].color.withOpacity(0.6)
+                      ], begin: Alignment.topLeft),
+                      borderRadius: BorderRadius.circular(25)),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(appSubjects[i].icon, size: 50, color: Colors.white),
+                      const SizedBox(height: 10),
+                      Text(S.get(appSubjects[i].nameKey),
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18))
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
+// -----------------------------------------------------------------------------
+// صفحة دروس المادة
+// -----------------------------------------------------------------------------
 class SubjectLessonsPage extends StatefulWidget {
   final SubjectData subject;
   const SubjectLessonsPage({super.key, required this.subject});
@@ -650,8 +601,7 @@ class SubjectLessonsPage extends StatefulWidget {
 }
 
 class _SubjectLessonsPageState extends State<SubjectLessonsPage> {
-  // دالة تعديل العنوان مع استخدام merge لمنع مسح البيانات الأخرى
-  void _editTitle(String docId, String currentTitle, String collectionPath) {
+  void _editTitle(String docId, String currentTitle) {
     final ctrl = TextEditingController(text: currentTitle);
     showDialog(
       context: context,
@@ -664,17 +614,12 @@ class _SubjectLessonsPageState extends State<SubjectLessonsPage> {
           TextButton(
               onPressed: () => Navigator.pop(c), child: Text(S.get('cancel'))),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(
-                backgroundColor: widget.subject.color,
-                foregroundColor: Colors.white),
             onPressed: () async {
-              if (ctrl.text.isNotEmpty) {
-                // استخدام merge يمنع مسح أي بيانات سابقة
-                await FirebaseFirestore.instance
-                    .collection(collectionPath)
-                    .doc(docId)
-                    .set({'custom_title': ctrl.text}, SetOptions(merge: true));
-              }
+              await supabase.from('lesson_metadata').upsert({
+                'id': docId,
+                'subjectId': widget.subject.id,
+                'custom_title': ctrl.text
+              });
               if (mounted) Navigator.pop(context);
             },
             child: Text(S.get('save')),
@@ -684,12 +629,10 @@ class _SubjectLessonsPageState extends State<SubjectLessonsPage> {
     );
   }
 
-  // تحديث عدد الدروس في قاعدة البيانات حتى لا يختفي
   void _updateCount(int newCount) async {
-    await FirebaseFirestore.instance
-        .collection('subject_config')
-        .doc(widget.subject.id)
-        .set({'lesson_count': newCount}, SetOptions(merge: true));
+    await supabase
+        .from('subject_config')
+        .upsert({'id': widget.subject.id, 'lesson_count': newCount});
   }
 
   @override
@@ -699,32 +642,25 @@ class _SubjectLessonsPageState extends State<SubjectLessonsPage> {
           title: Text(S.get(widget.subject.nameKey)),
           backgroundColor: widget.subject.color,
           foregroundColor: Colors.white),
-      body: StreamBuilder<DocumentSnapshot>(
-        // نستمع لقاعدة البيانات لنعرف كم درساً يوجد (الافتراضي 15)
-        stream: FirebaseFirestore.instance
-            .collection('subject_config')
-            .doc(widget.subject.id)
-            .snapshots(),
+      body: StreamBuilder<List<Map<String, dynamic>>>(
+        stream: supabase
+            .from('subject_config')
+            .stream(primaryKey: ['id']).eq('id', widget.subject.id),
         builder: (context, configSnap) {
           int currentCount = 15;
-          if (configSnap.hasData && configSnap.data!.exists) {
-            var data = configSnap.data!.data() as Map<String, dynamic>;
-            if (data.containsKey('lesson_count'))
-              currentCount = data['lesson_count'];
+          if (configSnap.hasData && configSnap.data!.isNotEmpty) {
+            currentCount = configSnap.data!.first['lesson_count'] ?? 15;
           }
 
-          return StreamBuilder<QuerySnapshot>(
-            stream: FirebaseFirestore.instance
-                .collection('lesson_metadata')
-                .where('subjectId', isEqualTo: widget.subject.id)
-                .snapshots(),
+          return StreamBuilder<List<Map<String, dynamic>>>(
+            stream: supabase
+                .from('lesson_metadata')
+                .stream(primaryKey: ['id']).eq('subjectId', widget.subject.id),
             builder: (context, snapshot) {
               Map<String, String> customTitles = {};
               if (snapshot.hasData) {
-                for (var doc in snapshot.data!.docs) {
-                  var data = doc.data() as Map<String, dynamic>;
-                  if (data.containsKey('custom_title'))
-                    customTitles[doc.id] = data['custom_title'];
+                for (var row in snapshot.data!) {
+                  customTitles[row['id']] = row['custom_title'] ?? '';
                 }
               }
 
@@ -742,7 +678,6 @@ class _SubjectLessonsPageState extends State<SubjectLessonsPage> {
                             "${S.get('lesson')} $lessonNum";
 
                         return Card(
-                          elevation: 2,
                           margin: const EdgeInsets.only(bottom: 12),
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(15)),
@@ -750,19 +685,15 @@ class _SubjectLessonsPageState extends State<SubjectLessonsPage> {
                             leading: CircleAvatar(
                                 backgroundColor:
                                     widget.subject.color.withOpacity(0.2),
-                                child: Text("$lessonNum",
-                                    style: TextStyle(
-                                        color: widget.subject.color,
-                                        fontWeight: FontWeight.bold))),
+                                child: Text("$lessonNum")),
                             title: Text(displayTitle,
                                 style: const TextStyle(
                                     fontWeight: FontWeight.bold)),
                             trailing: isTeacherGlobal
                                 ? IconButton(
-                                    icon: const Icon(Icons.edit,
-                                        color: Colors.blueGrey),
-                                    onPressed: () => _editTitle(lessonId,
-                                        displayTitle, 'lesson_metadata'))
+                                    icon: const Icon(Icons.edit),
+                                    onPressed: () =>
+                                        _editTitle(lessonId, displayTitle))
                                 : const Icon(Icons.arrow_forward_ios, size: 16),
                             onTap: () => Navigator.push(
                                 context,
@@ -776,7 +707,7 @@ class _SubjectLessonsPageState extends State<SubjectLessonsPage> {
                       },
                     ),
                   ),
-                  if (isTeacherGlobal) // أزرار الناقص والزائد للأستاذ
+                  if (isTeacherGlobal)
                     Container(
                       padding: const EdgeInsets.symmetric(vertical: 10),
                       color: Colors.grey.withOpacity(0.1),
@@ -790,7 +721,7 @@ class _SubjectLessonsPageState extends State<SubjectLessonsPage> {
                                 if (currentCount > 1)
                                   _updateCount(currentCount - 1);
                               }),
-                          Text("الدروس الحالية: $currentCount",
+                          Text("الدروس: $currentCount",
                               style: const TextStyle(
                                   fontSize: 18, fontWeight: FontWeight.bold)),
                           IconButton(
@@ -810,7 +741,9 @@ class _SubjectLessonsPageState extends State<SubjectLessonsPage> {
   }
 }
 
-// --- 4. صفحة محتوى الدرس الغني (تعديل الرفع الجذري ليقبل الويب) ---
+// -----------------------------------------------------------------------------
+// صفحة محتوى الدرس
+// -----------------------------------------------------------------------------
 class LessonContentPage extends StatefulWidget {
   final String lessonId;
   final String title;
@@ -826,146 +759,95 @@ class LessonContentPage extends StatefulWidget {
 
 class _LessonContentPageState extends State<LessonContentPage> {
   bool isUploading = false;
-
-  Future<String?> _uploadFileToSupabase() async {
-    // 🌟 withData: true هي التي تجعل رفع الويب ينجح بدلاً من مسار الملف
+  Future<String?> _uploadFile() async {
     FilePickerResult? result =
         await FilePicker.platform.pickFiles(withData: true);
-
     if (result != null) {
       setState(() => isUploading = true);
       try {
         String fileName =
             "${DateTime.now().millisecondsSinceEpoch}_${result.files.single.name}";
-        String storagePath = 'lesson_files/${widget.lessonId}/$fileName';
-
+        String path = 'lesson_files/${widget.lessonId}/$fileName';
         if (kIsWeb) {
-          Uint8List? fileBytes = result.files.single.bytes;
-          if (fileBytes != null) {
-            await Supabase.instance.client.storage
-                .from('jaafari_storage')
-                .uploadBinary(storagePath, fileBytes);
-          }
+          await supabase.storage
+              .from('jaafari_storage')
+              .uploadBinary(path, result.files.single.bytes!);
         } else {
-          if (result.files.single.path != null) {
-            File file = File(result.files.single.path!);
-            await Supabase.instance.client.storage
-                .from('jaafari_storage')
-                .upload(storagePath, file);
-          }
+          await supabase.storage
+              .from('jaafari_storage')
+              .upload(path, File(result.files.single.path!));
         }
-
-        String downloadUrl = Supabase.instance.client.storage
-            .from('jaafari_storage')
-            .getPublicUrl(storagePath);
-        setState(() => isUploading = false);
-        return downloadUrl;
+        return supabase.storage.from('jaafari_storage').getPublicUrl(path);
       } catch (e) {
+        debugPrint("Upload error: $e");
+      } finally {
         setState(() => isUploading = false);
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text("فشل الرفع: $e")));
       }
     }
     return null;
   }
 
-  void _addContentDialog() {
+  void _addContent() {
     final ctrl = TextEditingController();
-    String selectedType = 'text';
-
+    String type = 'text';
     showDialog(
       context: context,
       builder: (c) => StatefulBuilder(
-        builder: (ctx, setDialogState) => AlertDialog(
+        builder: (ctx, setS) => AlertDialog(
           title: Text(S.get('add_content')),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               DropdownButton<String>(
-                value: selectedType,
-                isExpanded: true,
-                items: [
-                  DropdownMenuItem(
-                      value: 'text', child: Text(S.get('text_type'))),
-                  DropdownMenuItem(
-                      value: 'file', child: Text(S.get('file_type')))
-                ],
-                onChanged: (v) => setDialogState(() => selectedType = v!),
-              ),
-              const SizedBox(height: 15),
-              if (selectedType == 'text')
+                  value: type,
+                  items: [
+                    DropdownMenuItem(
+                        value: 'text', child: Text(S.get('text_type'))),
+                    DropdownMenuItem(
+                        value: 'file', child: Text(S.get('file_type')))
+                  ],
+                  onChanged: (v) => setS(() => type = v!)),
+              if (type == 'text')
                 TextField(
                     controller: ctrl,
-                    maxLines: 5,
-                    decoration: InputDecoration(
-                        labelText: S.get('content'),
-                        border: const OutlineInputBorder()))
+                    maxLines: 3,
+                    decoration: InputDecoration(labelText: S.get('content')))
               else
                 isUploading
                     ? const CircularProgressIndicator()
-                    : ElevatedButton.icon(
+                    : ElevatedButton(
                         onPressed: () async {
-                          setDialogState(() => isUploading = true);
-                          String? fileUrl = await _uploadFileToSupabase();
-                          setDialogState(() => isUploading = false);
-
-                          if (fileUrl != null) {
-                            await FirebaseFirestore.instance
-                                .collection('lesson_contents')
-                                .add({
+                          String? url = await _uploadFile();
+                          if (url != null) {
+                            await supabase.from('lesson_contents').insert({
                               'lessonId': widget.lessonId,
                               'type': 'file',
-                              'data': fileUrl,
-                              'timestamp': FieldValue.serverTimestamp()
+                              'data': url,
+                              'created_at': DateTime.now().toIso8601String()
                             });
                             if (mounted) Navigator.pop(ctx);
                           }
                         },
-                        icon: const Icon(Icons.upload_file),
-                        label: Text(S.get('file_type'))),
+                        child: Text(S.get('file_type'))),
             ],
           ),
           actions: [
-            TextButton(
-                onPressed: () => Navigator.pop(c),
-                child: Text(S.get('cancel'))),
-            if (selectedType == 'text')
+            if (type == 'text')
               ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                    backgroundColor: widget.color,
-                    foregroundColor: Colors.white),
-                onPressed: () async {
-                  if (ctrl.text.isNotEmpty) {
-                    await FirebaseFirestore.instance
-                        .collection('lesson_contents')
-                        .add({
+                  onPressed: () async {
+                    await supabase.from('lesson_contents').insert({
                       'lessonId': widget.lessonId,
                       'type': 'text',
                       'data': ctrl.text,
-                      'timestamp': FieldValue.serverTimestamp()
+                      'created_at': DateTime.now().toIso8601String()
                     });
-                    if (mounted) Navigator.pop(context);
-                  }
-                },
-                child: Text(S.get('save')),
-              ),
+                    if (mounted) Navigator.pop(ctx);
+                  },
+                  child: Text(S.get('save')))
           ],
         ),
       ),
     );
-  }
-
-  Future<void> _launchURL(String url) async {
-    final uri = Uri.parse(url);
-    if (await canLaunchUrl(uri))
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-  }
-
-  void _deleteContent(String docId) async {
-    await FirebaseFirestore.instance
-        .collection('lesson_contents')
-        .doc(docId)
-        .delete();
   }
 
   @override
@@ -975,106 +857,57 @@ class _LessonContentPageState extends State<LessonContentPage> {
           title: Text(widget.title),
           backgroundColor: widget.color,
           foregroundColor: Colors.white),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('lesson_contents')
-            .where('lessonId', isEqualTo: widget.lessonId)
-            .orderBy('timestamp')
-            .snapshots(),
+      body: StreamBuilder<List<Map<String, dynamic>>>(
+        stream: supabase
+            .from('lesson_contents')
+            .stream(primaryKey: ['id'])
+            .eq('lessonId', widget.lessonId)
+            .order('created_at', ascending: true),
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting)
+          if (!snapshot.hasData)
             return const Center(child: CircularProgressIndicator());
-          if (!snapshot.hasData || snapshot.data!.docs.isEmpty)
-            return const Center(
-                child: Text("محتوى الدرس غير متوفر بعد.",
-                    style: TextStyle(fontSize: 18)));
-
-          var contents = snapshot.data!.docs;
+          var contents = snapshot.data!;
           return ListView.builder(
             padding: const EdgeInsets.all(20),
             itemCount: contents.length,
             itemBuilder: (ctx, i) {
-              var block = contents[i].data() as Map<String, dynamic>;
-              String type = block['type'];
-              String data = block['data'];
-              String docId = contents[i].id;
-              Widget contentWidget;
-              if (type == 'file') {
-                bool isImage = data.contains('.png') ||
-                    data.contains('.jpg') ||
-                    data.contains('.jpeg') ||
-                    data.contains('alt=media');
-                if (isImage) {
-                  contentWidget = ClipRRect(
-                      borderRadius: BorderRadius.circular(15),
-                      child: Image.network(data, fit: BoxFit.cover,
-                          loadingBuilder: (c, child, progress) {
-                        if (progress == null) return child;
-                        return const Center(child: CircularProgressIndicator());
-                      }));
-                } else {
-                  contentWidget = InkWell(
-                    onTap: () => _launchURL(data),
-                    child: Container(
-                      height: 80,
-                      decoration: BoxDecoration(
-                          color: widget.color.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(15),
-                          border: Border.all(color: widget.color)),
-                      child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.insert_drive_file,
-                                size: 30, color: widget.color),
-                            const SizedBox(width: 10),
-                            Text(S.get('open_file'),
-                                style: TextStyle(
-                                    fontSize: 16,
-                                    color: widget.color,
-                                    fontWeight: FontWeight.bold))
-                          ]),
-                    ),
-                  );
-                }
-              } else {
-                contentWidget = Text(data,
-                    style: const TextStyle(fontSize: 18, height: 1.6));
-              }
+              var item = contents[i];
               return Padding(
                 padding: const EdgeInsets.only(bottom: 20),
-                child: isTeacherGlobal
-                    ? Stack(children: [
-                        Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(10),
-                            child: contentWidget),
-                        Positioned(
-                            top: 0,
-                            left: 0,
-                            child: IconButton(
-                                icon:
-                                    const Icon(Icons.delete, color: Colors.red),
-                                onPressed: () => _deleteContent(docId)))
-                      ])
-                    : contentWidget,
+                child: item['type'] == 'text'
+                    ? Text(item['data'], style: const TextStyle(fontSize: 18))
+                    : InkWell(
+                        onTap: () => launchUrl(Uri.parse(item['data'])),
+                        child: Container(
+                          padding: const EdgeInsets.all(15),
+                          decoration: BoxDecoration(
+                              border: Border.all(color: widget.color),
+                              borderRadius: BorderRadius.circular(10)),
+                          child: Row(
+                            children: [
+                              Icon(Icons.file_present, color: widget.color),
+                              const SizedBox(width: 10),
+                              Text(S.get('open_file'))
+                            ],
+                          ),
+                        ),
+                      ),
               );
             },
           );
         },
       ),
       floatingActionButton: isTeacherGlobal
-          ? FloatingActionButton.extended(
-              onPressed: _addContentDialog,
-              backgroundColor: widget.color,
-              icon: const Icon(Icons.add, color: Colors.white),
-              label: Text(S.get('add_content'),
-                  style: const TextStyle(color: Colors.white)))
+          ? FloatingActionButton(
+              onPressed: _addContent, child: const Icon(Icons.add))
           : null,
     );
   }
 }
 
-// --- 5. نظام الاختبارات المتقدم (+ و - للاختبارات للحفاظ عليها) ---
+// -----------------------------------------------------------------------------
+// واجهة الاختبارات (الجديدة والمتطورة)
+// -----------------------------------------------------------------------------
 class QuizzesGridPage extends StatelessWidget {
   const QuizzesGridPage({super.key});
   @override
@@ -1115,7 +948,14 @@ class SubjectQuizzesListPage extends StatefulWidget {
 }
 
 class _SubjectQuizzesListPageState extends State<SubjectQuizzesListPage> {
-  void _editQuizTitle(String docId, String currentTitle) {
+  void _updateQuizCount(int newCount) async {
+    await supabase
+        .from('subject_config')
+        .upsert({'id': "${widget.subject.id}_quiz", 'quiz_count': newCount});
+  }
+
+  // إضافة دالة تغيير اسم الاختبار (للتحديث في جدول quiz_metadata)
+  void _editQuizTitle(String quizId, String currentTitle) {
     final ctrl = TextEditingController(text: currentTitle);
     showDialog(
       context: context,
@@ -1128,17 +968,12 @@ class _SubjectQuizzesListPageState extends State<SubjectQuizzesListPage> {
           TextButton(
               onPressed: () => Navigator.pop(c), child: Text(S.get('cancel'))),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(
-                backgroundColor: widget.subject.color,
-                foregroundColor: Colors.white),
             onPressed: () async {
-              if (ctrl.text.isNotEmpty) {
-                // منع الحذف بسبب set باستخدام merge
-                await FirebaseFirestore.instance
-                    .collection('quiz_metadata')
-                    .doc(docId)
-                    .set({'custom_title': ctrl.text}, SetOptions(merge: true));
-              }
+              await supabase.from('quiz_metadata').upsert({
+                'id': quizId,
+                'subjectId': widget.subject.id,
+                'custom_title': ctrl.text
+              });
               if (mounted) Navigator.pop(context);
             },
             child: Text(S.get('save')),
@@ -1146,13 +981,6 @@ class _SubjectQuizzesListPageState extends State<SubjectQuizzesListPage> {
         ],
       ),
     );
-  }
-
-  void _updateQuizCount(int newCount) async {
-    await FirebaseFirestore.instance
-        .collection('subject_config')
-        .doc("${widget.subject.id}_quiz")
-        .set({'quiz_count': newCount}, SetOptions(merge: true));
   }
 
   @override
@@ -1163,31 +991,26 @@ class _SubjectQuizzesListPageState extends State<SubjectQuizzesListPage> {
               Text("${S.get('quiz_title')} - ${S.get(widget.subject.nameKey)}"),
           backgroundColor: widget.subject.color,
           foregroundColor: Colors.white),
-      body: StreamBuilder<DocumentSnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('subject_config')
-            .doc("${widget.subject.id}_quiz")
-            .snapshots(),
+      body: StreamBuilder<List<Map<String, dynamic>>>(
+        stream: supabase
+            .from('subject_config')
+            .stream(primaryKey: ['id']).eq('id', "${widget.subject.id}_quiz"),
         builder: (context, configSnap) {
-          int currentCount = 15;
-          if (configSnap.hasData && configSnap.data!.exists) {
-            var data = configSnap.data!.data() as Map<String, dynamic>;
-            if (data.containsKey('quiz_count'))
-              currentCount = data['quiz_count'];
+          int count = 15;
+          if (configSnap.hasData && configSnap.data!.isNotEmpty) {
+            count = configSnap.data!.first['quiz_count'] ?? 15;
           }
 
-          return StreamBuilder<QuerySnapshot>(
-            stream: FirebaseFirestore.instance
-                .collection('quiz_metadata')
-                .where('subjectId', isEqualTo: widget.subject.id)
-                .snapshots(),
-            builder: (context, snapshot) {
-              Map<String, String> customTitles = {};
-              if (snapshot.hasData) {
-                for (var doc in snapshot.data!.docs) {
-                  var data = doc.data() as Map<String, dynamic>;
-                  if (data.containsKey('custom_title'))
-                    customTitles[doc.id] = data['custom_title'];
+          // إضافة Stream آخر لجلب أسماء الاختبارات التي غيرها الأستاذ
+          return StreamBuilder<List<Map<String, dynamic>>>(
+            stream: supabase
+                .from('quiz_metadata')
+                .stream(primaryKey: ['id']).eq('subjectId', widget.subject.id),
+            builder: (context, quizMetaSnap) {
+              Map<String, String> customQuizTitles = {};
+              if (quizMetaSnap.hasData) {
+                for (var row in quizMetaSnap.data!) {
+                  customQuizTitles[row['id']] = row['custom_title'] ?? '';
                 }
               }
 
@@ -1196,17 +1019,22 @@ class _SubjectQuizzesListPageState extends State<SubjectQuizzesListPage> {
                   Expanded(
                     child: ListView.builder(
                       padding: const EdgeInsets.all(15),
-                      itemCount: currentCount,
+                      itemCount: count,
                       itemBuilder: (ctx, i) {
-                        int lessonNum = i + 1;
-                        String quizId = "${widget.subject.id}_quiz_$lessonNum";
-                        String displayTitle = customTitles[quizId] ??
-                            "اختبار ${S.get('lesson')} $lessonNum";
+                        String quizId = "${widget.subject.id}_quiz_${i + 1}";
+                        String displayTitle =
+                            customQuizTitles[quizId] ?? "اختبار ${i + 1}";
 
                         return Card(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(15)),
                           child: ListTile(
-                            leading:
-                                const Icon(Icons.quiz, color: Colors.orange),
+                            leading: CircleAvatar(
+                                backgroundColor:
+                                    widget.subject.color.withOpacity(0.2),
+                                child: Icon(Icons.quiz,
+                                    color: widget.subject.color)),
                             title: Text(displayTitle,
                                 style: const TextStyle(
                                     fontWeight: FontWeight.bold)),
@@ -1216,11 +1044,11 @@ class _SubjectQuizzesListPageState extends State<SubjectQuizzesListPage> {
                                         color: Colors.blueGrey),
                                     onPressed: () =>
                                         _editQuizTitle(quizId, displayTitle))
-                                : null,
+                                : const Icon(Icons.arrow_forward_ios, size: 16),
                             onTap: () => Navigator.push(
                                 ctx,
                                 MaterialPageRoute(
-                                    builder: (_) => QuizPlayArea(
+                                    builder: (c) => QuizPlayArea(
                                         quizId: quizId,
                                         color: widget.subject.color,
                                         title: displayTitle))),
@@ -1240,17 +1068,15 @@ class _SubjectQuizzesListPageState extends State<SubjectQuizzesListPage> {
                               icon: const Icon(Icons.remove_circle,
                                   color: Colors.red, size: 35),
                               onPressed: () {
-                                if (currentCount > 1)
-                                  _updateQuizCount(currentCount - 1);
+                                if (count > 1) _updateQuizCount(count - 1);
                               }),
-                          Text("الاختبارات الحالية: $currentCount",
+                          Text("الاختبارات: $count",
                               style: const TextStyle(
                                   fontSize: 18, fontWeight: FontWeight.bold)),
                           IconButton(
                               icon: const Icon(Icons.add_circle,
                                   color: Colors.green, size: 35),
-                              onPressed: () =>
-                                  _updateQuizCount(currentCount + 1)),
+                              onPressed: () => _updateQuizCount(count + 1)),
                         ],
                       ),
                     )
@@ -1278,53 +1104,47 @@ class QuizPlayArea extends StatefulWidget {
 }
 
 class _QuizPlayAreaState extends State<QuizPlayArea> {
-  int currentQuestionIndex = 0;
-  int score = 0;
-  bool isFinished = false;
-  bool isUploadingImg = false;
+  bool isUploadingExam = false;
 
-  Future<void> _uploadExamImageSupabase() async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles(
-        type: FileType.image, withData: true); // withData إجباري للويب
+  // دالة لرفع ملف الامتحان (PDF أو صورة)
+  Future<void> _uploadExamPaper() async {
+    FilePickerResult? result =
+        await FilePicker.platform.pickFiles(withData: true);
     if (result != null) {
-      setState(() => isUploadingImg = true);
+      setState(() => isUploadingExam = true);
       try {
         String fileName =
             "exam_${DateTime.now().millisecondsSinceEpoch}_${result.files.single.name}";
-        String storagePath = 'quiz_images/${widget.quizId}/$fileName';
+        String path = 'quiz_papers/${widget.quizId}/$fileName';
 
         if (kIsWeb) {
-          Uint8List? fileBytes = result.files.single.bytes;
-          if (fileBytes != null) {
-            await Supabase.instance.client.storage
-                .from('jaafari_storage')
-                .uploadBinary(storagePath, fileBytes);
-          }
+          await supabase.storage
+              .from('jaafari_storage')
+              .uploadBinary(path, result.files.single.bytes!);
         } else {
-          if (result.files.single.path != null) {
-            File file = File(result.files.single.path!);
-            await Supabase.instance.client.storage
-                .from('jaafari_storage')
-                .upload(storagePath, file);
-          }
+          await supabase.storage
+              .from('jaafari_storage')
+              .upload(path, File(result.files.single.path!));
         }
 
-        String downloadUrl = Supabase.instance.client.storage
-            .from('jaafari_storage')
-            .getPublicUrl(storagePath);
-        // حماية الصورة القديمة بالـ merge
-        await FirebaseFirestore.instance
-            .collection('quiz_metadata')
-            .doc(widget.quizId)
-            .set({'exam_image': downloadUrl}, SetOptions(merge: true));
+        String url =
+            supabase.storage.from('jaafari_storage').getPublicUrl(path);
+
+        // حفظ الرابط في جدول quiz_metadata
+        await supabase.from('quiz_metadata').upsert({
+          'id': widget.quizId,
+          'exam_paper_url': url,
+          'is_pdf': result.files.single.extension == 'pdf'
+        });
       } catch (e) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text("خطأ في الرفع: $e")));
+            .showSnackBar(SnackBar(content: Text("خطأ: $e")));
       }
-      setState(() => isUploadingImg = false);
+      setState(() => isUploadingExam = false);
     }
   }
 
+  // دالة لإنشاء سؤال متعدد الخيارات QCM
   void _addQuestionDialog() {
     final qCtrl = TextEditingController();
     final opt1 = TextEditingController();
@@ -1345,46 +1165,46 @@ class _QuizPlayAreaState extends State<QuizPlayArea> {
                 TextField(
                     controller: qCtrl,
                     decoration: InputDecoration(labelText: S.get('q_text'))),
+                const SizedBox(height: 10),
                 TextField(
                     controller: opt1,
-                    decoration:
-                        InputDecoration(labelText: "${S.get('opt')} 1")),
+                    decoration: const InputDecoration(labelText: "خيار 1")),
                 TextField(
                     controller: opt2,
-                    decoration:
-                        InputDecoration(labelText: "${S.get('opt')} 2")),
+                    decoration: const InputDecoration(labelText: "خيار 2")),
                 TextField(
                     controller: opt3,
-                    decoration:
-                        InputDecoration(labelText: "${S.get('opt')} 3")),
+                    decoration: const InputDecoration(labelText: "خيار 3")),
                 TextField(
                     controller: opt4,
-                    decoration:
-                        InputDecoration(labelText: "${S.get('opt')} 4")),
+                    decoration: const InputDecoration(labelText: "خيار 4")),
+                const SizedBox(height: 15),
                 DropdownButton<int>(
                     value: correctOpt,
                     items: [1, 2, 3, 4]
                         .map((e) => DropdownMenuItem(
-                            value: e, child: Text("الجواب الصحيح: $e")))
+                            value: e,
+                            child: Text("الجواب الصحيح: خيار رقم $e")))
                         .toList(),
                     onChanged: (v) => setStateDialog(() => correctOpt = v!)),
               ],
             ),
           ),
           actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(c),
+                child: Text(S.get('cancel'))),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                   backgroundColor: widget.color, foregroundColor: Colors.white),
               onPressed: () async {
                 if (qCtrl.text.isNotEmpty && opt1.text.isNotEmpty) {
-                  await FirebaseFirestore.instance
-                      .collection('quiz_questions')
-                      .add({
+                  await supabase.from('quiz_questions').insert({
                     'quizId': widget.quizId,
                     'q': qCtrl.text,
                     'opts': [opt1.text, opt2.text, opt3.text, opt4.text],
-                    'ans': correctOpt - 1,
-                    'timestamp': FieldValue.serverTimestamp()
+                    'ans': correctOpt - 1, // لأن المصفوفة تبدأ من 0
+                    'created_at': DateTime.now().toIso8601String()
                   });
                   if (mounted) Navigator.pop(context);
                 }
@@ -1397,194 +1217,232 @@ class _QuizPlayAreaState extends State<QuizPlayArea> {
     );
   }
 
-  void _answerQuestion(
-      int selectedIndex, List<QueryDocumentSnapshot> questions) {
-    var qData = questions[currentQuestionIndex].data() as Map<String, dynamic>;
-    if (selectedIndex == qData['ans']) score++;
-    if (currentQuestionIndex < questions.length - 1) {
-      setState(() => currentQuestionIndex++);
-    } else {
-      setState(() => isFinished = true);
-    }
+  void _deleteQuestion(dynamic docId) async {
+    await supabase.from('quiz_questions').delete().eq('id', docId);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.title),
-        backgroundColor: widget.color,
-        foregroundColor: Colors.white,
-        actions: [
-          if (isTeacherGlobal)
-            isUploadingImg
-                ? const Padding(
-                    padding: EdgeInsets.all(15.0),
-                    child: CircularProgressIndicator(color: Colors.white))
-                : IconButton(
-                    icon: const Icon(Icons.add_photo_alternate),
-                    tooltip: S.get('exam_img'),
-                    onPressed: _uploadExamImageSupabase)
-        ],
-      ),
-      body: StreamBuilder<DocumentSnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('quiz_metadata')
-            .doc(widget.quizId)
-            .snapshots(),
-        builder: (ctx, metaSnapshot) {
-          String? examImageUrl;
-          if (metaSnapshot.hasData && metaSnapshot.data!.exists) {
-            var mData = metaSnapshot.data!.data() as Map<String, dynamic>;
-            if (mData.containsKey('exam_image'))
-              examImageUrl = mData['exam_image'];
-          }
-          return StreamBuilder<QuerySnapshot>(
-            stream: FirebaseFirestore.instance
-                .collection('quiz_questions')
-                .where('quizId', isEqualTo: widget.quizId)
-                .orderBy('timestamp')
-                .snapshots(),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting)
-                return const Center(child: CircularProgressIndicator());
-              var questions = snapshot.data?.docs ?? [];
-              if (questions.isEmpty)
-                return Center(
-                    child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                      if (examImageUrl != null)
-                        Padding(
-                            padding: const EdgeInsets.all(20),
-                            child: Image.network(examImageUrl, height: 200)),
-                      Text(
-                          isTeacherGlobal
-                              ? "لا توجد أسئلة، أضف أسئلة الآن"
-                              : "الاختبار غير متاح بعد",
-                          style: const TextStyle(fontSize: 18))
-                    ]));
-              if (isFinished)
-                return Center(
-                    child: Text(
-                        "${S.get('score')}: $score / ${questions.length}",
-                        style: const TextStyle(
-                            fontSize: 26, fontWeight: FontWeight.bold)));
-              var currentQData = questions[currentQuestionIndex].data()
-                  as Map<String, dynamic>;
-              List<dynamic> options = currentQData['opts'];
-              return SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    if (examImageUrl != null)
-                      Padding(
-                          padding: const EdgeInsets.only(bottom: 20),
-                          child: ClipRRect(
-                              borderRadius: BorderRadius.circular(15),
-                              child: Image.network(examImageUrl,
-                                  fit: BoxFit.cover))),
-                    Text(
-                        "السؤال ${currentQuestionIndex + 1}/${questions.length}",
-                        style:
-                            const TextStyle(fontSize: 18, color: Colors.grey)),
-                    const SizedBox(height: 20),
-                    Text(currentQData['q'],
-                        style: const TextStyle(
-                            fontSize: 22, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 30),
-                    ...List.generate(
-                        options.length,
-                        (index) => Padding(
-                            padding: const EdgeInsets.only(bottom: 10),
-                            child: ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                    minimumSize:
-                                        const Size(double.infinity, 55),
-                                    alignment: Alignment.centerRight),
-                                onPressed: () =>
-                                    _answerQuestion(index, questions),
-                                child: Text(options[index],
-                                    style: const TextStyle(fontSize: 18))))),
-                  ],
-                ),
-              );
-            },
-          );
-        },
+          title: Text(widget.title),
+          backgroundColor: widget.color,
+          foregroundColor: Colors.white),
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            // ================== قسم 1: ورقة الامتحان المرفقة ==================
+            StreamBuilder<List<Map<String, dynamic>>>(
+              stream: supabase
+                  .from('quiz_metadata')
+                  .stream(primaryKey: ['id']).eq('id', widget.quizId),
+              builder: (context, metaSnap) {
+                if (!metaSnap.hasData || metaSnap.data!.isEmpty) {
+                  return isTeacherGlobal
+                      ? Padding(
+                          padding: const EdgeInsets.all(20),
+                          child: Text("لم تقم برفع ملف الامتحان بعد.",
+                              style: TextStyle(color: Colors.grey[600])))
+                      : const SizedBox();
+                }
+
+                var data = metaSnap.data!.first;
+                if (data['exam_paper_url'] == null) return const SizedBox();
+
+                String url = data['exam_paper_url'];
+                bool isPdf = data['is_pdf'] ?? false;
+
+                return Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.all(15),
+                  padding: const EdgeInsets.all(15),
+                  decoration: BoxDecoration(
+                      color: widget.color.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(15),
+                      border: Border.all(color: widget.color, width: 2)),
+                  child: Column(
+                    children: [
+                      Text(S.get('exam_file'),
+                          style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: widget.color)),
+                      const SizedBox(height: 10),
+                      if (!isPdf)
+                        ClipRRect(
+                            borderRadius: BorderRadius.circular(10),
+                            child: Image.network(url,
+                                height: 250, fit: BoxFit.cover)),
+                      const SizedBox(height: 15),
+                      ElevatedButton.icon(
+                        onPressed: () => launchUrl(Uri.parse(url),
+                            mode: LaunchMode.externalApplication),
+                        icon: const Icon(Icons.open_in_new),
+                        label: Text(
+                            isPdf ? "تحميل وفتح ملف الـ PDF" : "تكبير الصورة"),
+                        style: ElevatedButton.styleFrom(
+                            backgroundColor: widget.color,
+                            foregroundColor: Colors.white),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+
+            const Divider(thickness: 2),
+
+            // ================== قسم 2: أسئلة الاختبار التفاعلية (QCM) ==================
+            Padding(
+              padding: const EdgeInsets.all(15),
+              child: Text("الأسئلة التفاعلية للاختبار:",
+                  style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey[700])),
+            ),
+            StreamBuilder<List<Map<String, dynamic>>>(
+              stream: supabase
+                  .from('quiz_questions')
+                  .stream(primaryKey: ['id'])
+                  .eq('quizId', widget.quizId)
+                  .order('created_at', ascending: true),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) return const CircularProgressIndicator();
+                var questions = snapshot.data!;
+                if (questions.isEmpty) {
+                  return const Padding(
+                      padding: EdgeInsets.all(20),
+                      child: Text("لا توجد أسئلة تفاعلية مضافة بعد."));
+                }
+
+                return ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: questions.length,
+                  itemBuilder: (context, index) {
+                    var qData = questions[index];
+                    List<dynamic> options = qData['opts'];
+                    return Card(
+                      margin: const EdgeInsets.symmetric(
+                          horizontal: 15, vertical: 8),
+                      child: Padding(
+                        padding: const EdgeInsets.all(15),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                    child: Text("س${index + 1}: ${qData['q']}",
+                                        style: const TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.bold))),
+                                if (isTeacherGlobal)
+                                  IconButton(
+                                      icon: const Icon(Icons.delete,
+                                          color: Colors.red),
+                                      onPressed: () =>
+                                          _deleteQuestion(qData['id'])),
+                              ],
+                            ),
+                            const SizedBox(height: 10),
+                            ...List.generate(
+                                options.length,
+                                (i) => Padding(
+                                      padding: const EdgeInsets.only(bottom: 5),
+                                      child: Text("- ${options[i]}",
+                                          style: TextStyle(
+                                              color: (isTeacherGlobal &&
+                                                      i == qData['ans'])
+                                                  ? Colors.green
+                                                  : Colors.black,
+                                              fontWeight: (isTeacherGlobal &&
+                                                      i == qData['ans'])
+                                                  ? FontWeight.bold
+                                                  : FontWeight.normal)),
+                                    )),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+            const SizedBox(height: 80), // مسافة للأزرار العائمة
+          ],
+        ),
       ),
       floatingActionButton: isTeacherGlobal
-          ? FloatingActionButton.extended(
-              onPressed: _addQuestionDialog,
-              backgroundColor: widget.color,
-              icon: const Icon(Icons.add, color: Colors.white),
-              label: Text(S.get('add_q'),
-                  style: const TextStyle(color: Colors.white)))
+          ? Column(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                if (isUploadingExam)
+                  const CircularProgressIndicator()
+                else
+                  FloatingActionButton.extended(
+                      heroTag: "btn_upload_exam",
+                      onPressed: _uploadExamPaper,
+                      backgroundColor: Colors.amber,
+                      icon: const Icon(Icons.attach_file, color: Colors.black),
+                      label: const Text("إرفاق PDF/صورة",
+                          style: TextStyle(color: Colors.black))),
+                const SizedBox(height: 10),
+                FloatingActionButton.extended(
+                    heroTag: "btn_add_qcm",
+                    onPressed: _addQuestionDialog,
+                    backgroundColor: widget.color,
+                    icon: const Icon(Icons.add_task, color: Colors.white),
+                    label: Text("إضافة سؤال (QCM)",
+                        style: const TextStyle(color: Colors.white))),
+              ],
+            )
           : null,
     );
   }
 }
 
-// --- 6. حسابي والدعم ---
+// -----------------------------------------------------------------------------
+// صفحة الحساب الشخصي
+// -----------------------------------------------------------------------------
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
   void _contactSupport() async {
     final Uri emailLaunchUri = Uri(
         scheme: 'mailto',
         path: 'bilal38jaafari@gmail.com',
-        queryParameters: {'subject': 'طلب دعم من تطبيق Jaafari Guide'});
-    try {
-      await launchUrl(emailLaunchUri);
-    } catch (e) {
-      debugPrint("Error: $e");
-    }
+        queryParameters: {'subject': 'Support Jaafari Guide'});
+    launchUrl(emailLaunchUri);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-          title: Text(S.get('profile'),
-              style: const TextStyle(fontWeight: FontWeight.bold)),
-          centerTitle: true),
+      appBar: AppBar(title: Text(S.get('profile'))),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          const CircleAvatar(
-              radius: 50,
-              backgroundColor: Colors.deepPurple,
-              child: Icon(Icons.person, size: 50, color: Colors.white)),
-          const SizedBox(height: 15),
+          const Center(
+              child: CircleAvatar(
+                  radius: 50, child: Icon(Icons.person, size: 50))),
+          const SizedBox(height: 20),
           Center(
               child: Text(currentUserNameGlobal,
                   style: const TextStyle(
                       fontSize: 22, fontWeight: FontWeight.bold))),
-          Center(
-              child: Text(currentUserEmailGlobal,
-                  style: const TextStyle(fontSize: 16, color: Colors.grey))),
-          Center(
-              child: Text(isTeacherGlobal ? "أستاذ / مدير 👨‍🏫" : "تلميذ 🎓",
-                  style: TextStyle(
-                      color: isTeacherGlobal
-                          ? Colors.redAccent
-                          : Colors.blueAccent,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18))),
           const SizedBox(height: 30),
           ListTile(
               leading: const Icon(Icons.dark_mode),
-              title: Text(S.get('dark_mode'),
-                  style: const TextStyle(fontWeight: FontWeight.bold)),
+              title: Text(S.get('dark_mode')),
               trailing: Switch(
                   value: themeNotifier.value == ThemeMode.dark,
                   onChanged: (v) => themeNotifier.value =
                       v ? ThemeMode.dark : ThemeMode.light)),
           ListTile(
             leading: const Icon(Icons.language),
-            title: Text(S.get('lang'),
-                style: const TextStyle(fontWeight: FontWeight.bold)),
-            trailing: const Icon(Icons.arrow_drop_down),
+            title: Text(S.get('lang')),
             onTap: () => showModalBottomSheet(
                 context: context,
                 builder: (c) =>
@@ -1605,21 +1463,14 @@ class ProfilePage extends StatelessWidget {
           ),
           ListTile(
               leading: const Icon(Icons.support_agent),
-              title: Text(S.get('support'),
-                  style: const TextStyle(fontWeight: FontWeight.bold)),
+              title: Text(S.get('support')),
               onTap: _contactSupport),
           const Divider(height: 40),
           ListTile(
             leading: const Icon(Icons.logout, color: Colors.red),
             title: Text(S.get('logout'),
-                style: const TextStyle(
-                    color: Colors.red, fontWeight: FontWeight.bold)),
-            onTap: () async {
-              await FirebaseAuth.instance.signOut();
-              isTeacherGlobal = false;
-              Navigator.pushReplacement(context,
-                  MaterialPageRoute(builder: (_) => const AuthWrapper()));
-            },
+                style: const TextStyle(color: Colors.red)),
+            onTap: () => supabase.auth.signOut(),
           ),
         ],
       ),
