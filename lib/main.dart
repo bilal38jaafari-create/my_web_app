@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:supabase_flutter/supabase_flutter.dart'
+    hide User; // إخفاء User لمنع التعارض مع Firebase
 import 'package:file_picker/file_picker.dart';
 import 'dart:ui';
 import 'dart:io' show File;
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'firebase_options.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 // ==========================================
@@ -74,6 +79,8 @@ class S {
       'exam_file': 'ورقة الامتحان (PDF/صورة)',
       'add_exam': 'إرفاق ملف الامتحان',
       'delete': 'حذف',
+      'confirm_delete': 'تأكيد الحذف',
+      'delete_msg': 'هل أنت متأكد من أنك تريد الحذف نهائياً؟',
     },
     'en': {
       'app_title': 'Jaafari Guide',
@@ -137,6 +144,8 @@ class S {
       'exam_file': 'Exam Paper (PDF/Image)',
       'add_exam': 'Attach Exam File',
       'delete': 'Delete',
+      'confirm_delete': 'Confirm Deletion',
+      'delete_msg': 'Are you sure you want to delete this permanently?',
     },
   };
   static String get(String key) =>
@@ -151,9 +160,15 @@ String currentUserEmailGlobal = '';
 String currentUserNameGlobal = '';
 final supabase = Supabase.instance.client;
 
+// ==========================================
+// 2. دالة التشغيل الرئيسية
+// ==========================================
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
     await Supabase.initialize(
       url: 'https://vlyikngandsoznwzqtgp.supabase.co',
       anonKey:
@@ -195,9 +210,9 @@ class JaafariGuideApp extends StatelessWidget {
   }
 }
 
-// -----------------------------------------------------------------------------
-// نظام المصادقة مع التحقق من بيانات المستخدم
-// -----------------------------------------------------------------------------
+// ==========================================
+// 3. نظام توجيه الدخول وتذكر الحساب
+// ==========================================
 class AuthWrapper extends StatefulWidget {
   const AuthWrapper({super.key});
   @override
@@ -210,14 +225,17 @@ class _AuthWrapperState extends State<AuthWrapper> {
     return StreamBuilder<AuthState>(
       stream: supabase.auth.onAuthStateChange,
       builder: (context, snapshot) {
+        final session = supabase.auth.currentSession;
+
+        if (session != null) {
+          return UserDataFetcher(uid: session.user.id);
+        }
+
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
               body: Center(child: CircularProgressIndicator()));
         }
-        final session = supabase.auth.currentSession;
-        if (session != null) {
-          return UserDataFetcher(uid: session.user.id);
-        }
+
         return const AppleGlassLoginScreen();
       },
     );
@@ -230,8 +248,11 @@ class UserDataFetcher extends StatelessWidget {
 
   Future<Map<String, dynamic>?> _fetchUserData() async {
     try {
-      return await supabase.from('users').select().eq('id', uid).maybeSingle();
+      final data =
+          await supabase.from('users').select().eq('id', uid).maybeSingle();
+      return data;
     } catch (e) {
+      debugPrint("Error fetching user data: $e");
       return null;
     }
   }
@@ -245,17 +266,24 @@ class UserDataFetcher extends StatelessWidget {
           return const Scaffold(
               body: Center(child: CircularProgressIndicator()));
         }
+
         currentUserEmailGlobal = supabase.auth.currentUser?.email ?? '';
-        isTeacherGlobal =
-            (currentUserEmailGlobal == 'bilal38jaafari@gmail.com');
+
+        // --- تحديد الأستاذ (بناءً على طلبك) ---
+        isTeacherGlobal = (currentUserEmailGlobal.toLowerCase() ==
+            'bilal38jaafari@gmail.com');
 
         if (snapshot.hasData && snapshot.data != null) {
           var data = snapshot.data!;
           currentUserNameGlobal =
-              "${data['firstName'] ?? ''} ${data['lastName'] ?? ''}";
+              "${data['firstName'] ?? ''} ${data['lastName'] ?? ''}".trim();
+          if (currentUserNameGlobal.isEmpty) {
+            currentUserNameGlobal =
+                isTeacherGlobal ? "الأستاذ بلال الجعفري" : "تلميذ";
+          }
         } else {
           currentUserNameGlobal =
-              isTeacherGlobal ? "أستاذ بلال الجعفري" : "تلميذ";
+              isTeacherGlobal ? "الأستاذ بلال الجعفري" : "تلميذ";
         }
         return const MainNavigation();
       },
@@ -263,9 +291,9 @@ class UserDataFetcher extends StatelessWidget {
   }
 }
 
-// -----------------------------------------------------------------------------
-// واجهة تسجيل الدخول الزجاجية
-// -----------------------------------------------------------------------------
+// ==========================================
+// 4. واجهة تسجيل الدخول
+// ==========================================
 class AppleGlassLoginScreen extends StatefulWidget {
   const AppleGlassLoginScreen({super.key});
   @override
@@ -292,16 +320,23 @@ class _AppleGlassLoginScreenState extends State<AppleGlassLoginScreen> {
       return;
     }
     setState(() => isLoading = true);
+
     try {
       if (isRegistering) {
-        if (pass != _confirmPassCtrl.text.trim()) {
+        String confPass = _confirmPassCtrl.text.trim();
+        if (pass != confPass) {
           _showError(S.get('pass_mismatch'));
           setState(() => isLoading = false);
           return;
         }
-        final res = await supabase.auth.signUp(email: email, password: pass);
+
+        final AuthResponse res = await supabase.auth.signUp(
+          email: email,
+          password: pass,
+        );
+
         if (res.user != null) {
-          await supabase.from('users').upsert({
+          await supabase.from('users').insert({
             'id': res.user!.id,
             'firstName': _firstNameCtrl.text.trim(),
             'lastName': _lastNameCtrl.text.trim(),
@@ -311,10 +346,13 @@ class _AppleGlassLoginScreenState extends State<AppleGlassLoginScreen> {
           });
         }
       } else {
-        await supabase.auth.signInWithPassword(email: email, password: pass);
+        await supabase.auth.signInWithPassword(
+          email: email,
+          password: pass,
+        );
       }
-    } on AuthException catch (e) {
-      _showError(e.message);
+    } on AuthException catch (error) {
+      _showError(error.message);
     } catch (e) {
       _showError(S.get('auth_error'));
     }
@@ -327,14 +365,12 @@ class _AppleGlassLoginScreenState extends State<AppleGlassLoginScreen> {
       body: Stack(
         children: [
           Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(colors: [
-                Color(0xFF0F2027),
-                Color(0xFF203A43),
-                Color(0xFF2C5364)
-              ], begin: Alignment.topCenter, end: Alignment.bottomCenter),
-            ),
-          ),
+              decoration: const BoxDecoration(
+                  gradient: LinearGradient(colors: [
+            Color(0xFF0F2027),
+            Color(0xFF203A43),
+            Color(0xFF2C5364)
+          ], begin: Alignment.topCenter, end: Alignment.bottomCenter))),
           Positioned(
               top: -50,
               left: -50,
@@ -362,14 +398,16 @@ class _AppleGlassLoginScreenState extends State<AppleGlassLoginScreen> {
                         border: Border.all(
                             color: Colors.white.withOpacity(0.2), width: 1.5)),
                     child: Column(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         const Icon(Icons.school, size: 60, color: Colors.white),
                         const SizedBox(height: 20),
                         Text(S.get('app_title'),
                             style: const TextStyle(
                                 fontSize: 28,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white)),
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                                letterSpacing: 1.2)),
                         const SizedBox(height: 30),
                         if (isRegistering) ...[
                           Row(children: [
@@ -407,17 +445,24 @@ class _AppleGlassLoginScreenState extends State<AppleGlassLoginScreen> {
                                         const Size(double.infinity, 55),
                                     shape: RoundedRectangleBorder(
                                         borderRadius:
-                                            BorderRadius.circular(20))),
+                                            BorderRadius.circular(20)),
+                                    side: BorderSide(
+                                        color: Colors.white.withOpacity(0.3))),
                                 onPressed: _submit,
                                 child: Text(
                                     isRegistering
                                         ? S.get('register')
                                         : S.get('login'),
-                                    style: const TextStyle(fontSize: 18))),
+                                    style: const TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w600))),
                         const SizedBox(height: 15),
                         TextButton(
-                            onPressed: () =>
-                                setState(() => isRegistering = !isRegistering),
+                            onPressed: () => setState(() {
+                                  isRegistering = !isRegistering;
+                                  _emailCtrl.clear();
+                                  _passCtrl.clear();
+                                }),
                             child: Text(
                                 isRegistering
                                     ? S.get('have_acc')
@@ -448,14 +493,22 @@ class _AppleGlassLoginScreenState extends State<AppleGlassLoginScreen> {
           filled: true,
           fillColor: Colors.white.withOpacity(0.1),
           prefixIcon: Icon(icon, color: Colors.white70),
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(20))),
+          border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(20),
+              borderSide: BorderSide(color: Colors.white.withOpacity(0.2))),
+          enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(20),
+              borderSide: BorderSide(color: Colors.white.withOpacity(0.2))),
+          focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(20),
+              borderSide: const BorderSide(color: Colors.white, width: 1.5))),
     );
   }
 }
 
-// -----------------------------------------------------------------------------
-// التنقل الرئيسي وقائمة المواد الكاملة
-// -----------------------------------------------------------------------------
+// ==========================================
+// 5. التنقل الرئيسي وقائمة المواد
+// ==========================================
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
   @override
@@ -488,7 +541,6 @@ class _MainNavigationState extends State<MainNavigation> {
   }
 }
 
-// قائمة المواد الـ 12 كما كانت تماماً
 class SubjectData {
   final String id, nameKey;
   final IconData icon;
@@ -511,9 +563,9 @@ final List<SubjectData> appSubjects = [
   SubjectData("chemistry", "chemistry", Icons.science, Colors.cyan),
 ];
 
-// -----------------------------------------------------------------------------
-// واجهة الدروس (الشبكة الرئيسية)
-// -----------------------------------------------------------------------------
+// ==========================================
+// 6. واجهة الدروس (ديناميكية ومتزامنة 100%)
+// ==========================================
 class LessonsGridPage extends StatelessWidget {
   const LessonsGridPage({super.key});
   @override
@@ -522,12 +574,14 @@ class LessonsGridPage extends StatelessWidget {
       appBar: AppBar(
           title: Text(S.get('app_title'),
               style: const TextStyle(fontWeight: FontWeight.bold)),
-          centerTitle: true),
+          centerTitle: true,
+          elevation: 0),
       body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
             decoration: BoxDecoration(
               color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
               borderRadius: const BorderRadius.only(
@@ -537,18 +591,30 @@ class LessonsGridPage extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text("مرحباً بك،",
-                    style: TextStyle(
-                        fontSize: 18,
-                        color: Theme.of(context).colorScheme.primary)),
-                Text(currentUserNameGlobal,
-                    style: const TextStyle(
-                        fontSize: 26,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1.2)),
+                Text(
+                  "مرحباً بك،",
+                  style: TextStyle(
+                      fontSize: 18,
+                      color: Theme.of(context).colorScheme.primary),
+                ),
+                Text(
+                  currentUserNameGlobal,
+                  style: const TextStyle(
+                      fontSize: 26,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.2),
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  isTeacherGlobal
+                      ? "ماذا تريد أن تُدرّس اليوم؟ 👨‍🏫"
+                      : "اختر مادة وابدأ التعلم 🚀",
+                  style: const TextStyle(fontSize: 14, color: Colors.grey),
+                ),
               ],
             ),
           ),
+          const SizedBox(height: 10),
           Expanded(
             child: GridView.builder(
               padding: const EdgeInsets.all(15),
@@ -567,7 +633,13 @@ class LessonsGridPage extends StatelessWidget {
                         appSubjects[i].color,
                         appSubjects[i].color.withOpacity(0.6)
                       ], begin: Alignment.topLeft),
-                      borderRadius: BorderRadius.circular(25)),
+                      borderRadius: BorderRadius.circular(25),
+                      boxShadow: [
+                        BoxShadow(
+                            color: appSubjects[i].color.withOpacity(0.3),
+                            blurRadius: 10,
+                            offset: const Offset(0, 5))
+                      ]),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -577,7 +649,8 @@ class LessonsGridPage extends StatelessWidget {
                           style: const TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
-                              fontSize: 18))
+                              fontSize: 18),
+                          textAlign: TextAlign.center)
                     ],
                   ),
                 ),
@@ -590,9 +663,6 @@ class LessonsGridPage extends StatelessWidget {
   }
 }
 
-// -----------------------------------------------------------------------------
-// صفحة دروس المادة
-// -----------------------------------------------------------------------------
 class SubjectLessonsPage extends StatefulWidget {
   final SubjectData subject;
   const SubjectLessonsPage({super.key, required this.subject});
@@ -614,12 +684,17 @@ class _SubjectLessonsPageState extends State<SubjectLessonsPage> {
           TextButton(
               onPressed: () => Navigator.pop(c), child: Text(S.get('cancel'))),
           ElevatedButton(
+            style: ElevatedButton.styleFrom(
+                backgroundColor: widget.subject.color,
+                foregroundColor: Colors.white),
             onPressed: () async {
-              await supabase.from('lesson_metadata').upsert({
-                'id': docId,
-                'subjectId': widget.subject.id,
-                'custom_title': ctrl.text
-              });
+              if (ctrl.text.isNotEmpty) {
+                await supabase.from('lesson_metadata').upsert({
+                  'id': docId,
+                  'subjectId': widget.subject.id,
+                  'custom_title': ctrl.text
+                });
+              }
               if (mounted) Navigator.pop(context);
             },
             child: Text(S.get('save')),
@@ -649,7 +724,10 @@ class _SubjectLessonsPageState extends State<SubjectLessonsPage> {
         builder: (context, configSnap) {
           int currentCount = 15;
           if (configSnap.hasData && configSnap.data!.isNotEmpty) {
-            currentCount = configSnap.data!.first['lesson_count'] ?? 15;
+            var data = configSnap.data!.first;
+            if (data.containsKey('lesson_count')) {
+              currentCount = data['lesson_count'];
+            }
           }
 
           return StreamBuilder<List<Map<String, dynamic>>>(
@@ -660,7 +738,9 @@ class _SubjectLessonsPageState extends State<SubjectLessonsPage> {
               Map<String, String> customTitles = {};
               if (snapshot.hasData) {
                 for (var row in snapshot.data!) {
-                  customTitles[row['id']] = row['custom_title'] ?? '';
+                  if (row.containsKey('custom_title')) {
+                    customTitles[row['id']] = row['custom_title'];
+                  }
                 }
               }
 
@@ -678,6 +758,7 @@ class _SubjectLessonsPageState extends State<SubjectLessonsPage> {
                             "${S.get('lesson')} $lessonNum";
 
                         return Card(
+                          elevation: 2,
                           margin: const EdgeInsets.only(bottom: 12),
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(15)),
@@ -685,13 +766,17 @@ class _SubjectLessonsPageState extends State<SubjectLessonsPage> {
                             leading: CircleAvatar(
                                 backgroundColor:
                                     widget.subject.color.withOpacity(0.2),
-                                child: Text("$lessonNum")),
+                                child: Text("$lessonNum",
+                                    style: TextStyle(
+                                        color: widget.subject.color,
+                                        fontWeight: FontWeight.bold))),
                             title: Text(displayTitle,
                                 style: const TextStyle(
                                     fontWeight: FontWeight.bold)),
                             trailing: isTeacherGlobal
                                 ? IconButton(
-                                    icon: const Icon(Icons.edit),
+                                    icon: const Icon(Icons.edit,
+                                        color: Colors.blueGrey),
                                     onPressed: () =>
                                         _editTitle(lessonId, displayTitle))
                                 : const Icon(Icons.arrow_forward_ios, size: 16),
@@ -718,10 +803,11 @@ class _SubjectLessonsPageState extends State<SubjectLessonsPage> {
                               icon: const Icon(Icons.remove_circle,
                                   color: Colors.red, size: 35),
                               onPressed: () {
-                                if (currentCount > 1)
+                                if (currentCount > 1) {
                                   _updateCount(currentCount - 1);
+                                }
                               }),
-                          Text("الدروس: $currentCount",
+                          Text("الدروس الحالية: $currentCount",
                               style: const TextStyle(
                                   fontSize: 18, fontWeight: FontWeight.bold)),
                           IconButton(
@@ -741,9 +827,9 @@ class _SubjectLessonsPageState extends State<SubjectLessonsPage> {
   }
 }
 
-// -----------------------------------------------------------------------------
-// صفحة محتوى الدرس
-// -----------------------------------------------------------------------------
+// ==========================================
+// 7. صفحة محتوى الدرس (مع الرفع والحذف الآمن)
+// ==========================================
 class LessonContentPage extends StatefulWidget {
   final String lessonId;
   final String title;
@@ -759,93 +845,158 @@ class LessonContentPage extends StatefulWidget {
 
 class _LessonContentPageState extends State<LessonContentPage> {
   bool isUploading = false;
-  Future<String?> _uploadFile() async {
-    FilePickerResult? result =
-        await FilePicker.platform.pickFiles(withData: true);
+
+  Future<String?> _uploadFileToSupabase() async {
+    // دعم واضح وصريح لاختيار الـ PDF والصور
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf', 'png', 'jpg', 'jpeg', 'mp4', 'doc', 'docx'],
+        withData: true);
+
     if (result != null) {
       setState(() => isUploading = true);
       try {
         String fileName =
             "${DateTime.now().millisecondsSinceEpoch}_${result.files.single.name}";
-        String path = 'lesson_files/${widget.lessonId}/$fileName';
+        String storagePath = 'lesson_files/${widget.lessonId}/$fileName';
+
         if (kIsWeb) {
-          await supabase.storage
-              .from('jaafari_storage')
-              .uploadBinary(path, result.files.single.bytes!);
+          Uint8List? fileBytes = result.files.single.bytes;
+          if (fileBytes != null) {
+            await supabase.storage
+                .from('jaafari_storage')
+                .uploadBinary(storagePath, fileBytes);
+          }
         } else {
-          await supabase.storage
-              .from('jaafari_storage')
-              .upload(path, File(result.files.single.path!));
+          if (result.files.single.path != null) {
+            File file = File(result.files.single.path!);
+            await supabase.storage
+                .from('jaafari_storage')
+                .upload(storagePath, file);
+          }
         }
-        return supabase.storage.from('jaafari_storage').getPublicUrl(path);
-      } catch (e) {
-        debugPrint("Upload error: $e");
-      } finally {
+        String downloadUrl =
+            supabase.storage.from('jaafari_storage').getPublicUrl(storagePath);
         setState(() => isUploading = false);
+        return downloadUrl;
+      } catch (e) {
+        setState(() => isUploading = false);
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text("فشل الرفع: $e")));
       }
     }
     return null;
   }
 
-  void _addContent() {
+  void _addContentDialog() {
     final ctrl = TextEditingController();
-    String type = 'text';
+    String selectedType = 'text';
     showDialog(
       context: context,
       builder: (c) => StatefulBuilder(
-        builder: (ctx, setS) => AlertDialog(
+        builder: (ctx, setDialogState) => AlertDialog(
           title: Text(S.get('add_content')),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               DropdownButton<String>(
-                  value: type,
-                  items: [
-                    DropdownMenuItem(
-                        value: 'text', child: Text(S.get('text_type'))),
-                    DropdownMenuItem(
-                        value: 'file', child: Text(S.get('file_type')))
-                  ],
-                  onChanged: (v) => setS(() => type = v!)),
-              if (type == 'text')
+                value: selectedType,
+                isExpanded: true,
+                items: [
+                  DropdownMenuItem(
+                      value: 'text', child: Text(S.get('text_type'))),
+                  DropdownMenuItem(
+                      value: 'file', child: Text(S.get('file_type')))
+                ],
+                onChanged: (v) => setDialogState(() => selectedType = v!),
+              ),
+              const SizedBox(height: 15),
+              if (selectedType == 'text')
                 TextField(
                     controller: ctrl,
-                    maxLines: 3,
-                    decoration: InputDecoration(labelText: S.get('content')))
+                    maxLines: 5,
+                    decoration: InputDecoration(
+                        labelText: S.get('content'),
+                        border: const OutlineInputBorder()))
               else
                 isUploading
                     ? const CircularProgressIndicator()
-                    : ElevatedButton(
+                    : ElevatedButton.icon(
                         onPressed: () async {
-                          String? url = await _uploadFile();
-                          if (url != null) {
+                          setDialogState(() => isUploading = true);
+                          String? fileUrl = await _uploadFileToSupabase();
+                          setDialogState(() => isUploading = false);
+                          if (fileUrl != null) {
                             await supabase.from('lesson_contents').insert({
                               'lessonId': widget.lessonId,
                               'type': 'file',
-                              'data': url,
+                              'data': fileUrl,
                               'created_at': DateTime.now().toIso8601String()
                             });
                             if (mounted) Navigator.pop(ctx);
                           }
                         },
-                        child: Text(S.get('file_type'))),
+                        icon: const Icon(Icons.upload_file),
+                        label: Text(S.get('file_type')),
+                      ),
             ],
           ),
           actions: [
-            if (type == 'text')
+            TextButton(
+                onPressed: () => Navigator.pop(c),
+                child: Text(S.get('cancel'))),
+            if (selectedType == 'text')
               ElevatedButton(
-                  onPressed: () async {
+                style: ElevatedButton.styleFrom(
+                    backgroundColor: widget.color,
+                    foregroundColor: Colors.white),
+                onPressed: () async {
+                  if (ctrl.text.isNotEmpty) {
                     await supabase.from('lesson_contents').insert({
                       'lessonId': widget.lessonId,
                       'type': 'text',
                       'data': ctrl.text,
                       'created_at': DateTime.now().toIso8601String()
                     });
-                    if (mounted) Navigator.pop(ctx);
-                  },
-                  child: Text(S.get('save')))
+                    if (mounted) Navigator.pop(context);
+                  }
+                },
+                child: Text(S.get('save')),
+              ),
           ],
         ),
+      ),
+    );
+  }
+
+  // دالة الحذف الآمن (تم إصلاحها وإضافة رسالة تأكيد)
+  void _deleteContent(dynamic docId) {
+    showDialog(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: Text(S.get('confirm_delete'),
+            style: const TextStyle(color: Colors.red)),
+        content: Text(S.get('delete_msg')),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(c), child: Text(S.get('cancel'))),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red, foregroundColor: Colors.white),
+            onPressed: () async {
+              Navigator.pop(c);
+              try {
+                await supabase.from('lesson_contents').delete().eq('id', docId);
+                ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('تم الحذف بنجاح')));
+              } catch (e) {
+                ScaffoldMessenger.of(context)
+                    .showSnackBar(SnackBar(content: Text('تعذر الحذف: $e')));
+              }
+            },
+            child: Text(S.get('delete')),
+          ),
+        ],
       ),
     );
   }
@@ -864,50 +1015,109 @@ class _LessonContentPageState extends State<LessonContentPage> {
             .eq('lessonId', widget.lessonId)
             .order('created_at', ascending: true),
         builder: (context, snapshot) {
-          if (!snapshot.hasData)
+          if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
+          }
+          if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return const Center(
+                child: Text("لا يوجد محتوى", style: TextStyle(fontSize: 18)));
+          }
+
           var contents = snapshot.data!;
           return ListView.builder(
             padding: const EdgeInsets.all(20),
             itemCount: contents.length,
             itemBuilder: (ctx, i) {
-              var item = contents[i];
+              var block = contents[i];
+              String type = block['type'];
+              String data = block['data'];
+              dynamic docId = block['id'];
+              Widget contentWidget;
+
+              if (type == 'file') {
+                bool isImage = data.toLowerCase().contains('.png') ||
+                    data.toLowerCase().contains('.jpg') ||
+                    data.toLowerCase().contains('.jpeg');
+                bool isPdf = data.toLowerCase().contains('.pdf');
+
+                if (isImage) {
+                  contentWidget = ClipRRect(
+                      borderRadius: BorderRadius.circular(15),
+                      child: Image.network(data, fit: BoxFit.cover));
+                } else {
+                  contentWidget = InkWell(
+                    onTap: () async {
+                      if (await canLaunchUrl(Uri.parse(data))) {
+                        await launchUrl(Uri.parse(data),
+                            mode: LaunchMode.externalApplication);
+                      }
+                    },
+                    child: Container(
+                        height: 80,
+                        decoration: BoxDecoration(
+                            color: widget.color.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(15),
+                            border: Border.all(color: widget.color)),
+                        child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                  isPdf
+                                      ? Icons.picture_as_pdf
+                                      : Icons.insert_drive_file,
+                                  size: 35,
+                                  color: isPdf ? Colors.red : widget.color),
+                              const SizedBox(width: 10),
+                              Text(S.get('open_file'),
+                                  style: TextStyle(
+                                      fontSize: 16,
+                                      color: widget.color,
+                                      fontWeight: FontWeight.bold))
+                            ])),
+                  );
+                }
+              } else {
+                contentWidget = Text(data,
+                    style: const TextStyle(fontSize: 18, height: 1.6));
+              }
+
               return Padding(
                 padding: const EdgeInsets.only(bottom: 20),
-                child: item['type'] == 'text'
-                    ? Text(item['data'], style: const TextStyle(fontSize: 18))
-                    : InkWell(
-                        onTap: () => launchUrl(Uri.parse(item['data'])),
-                        child: Container(
-                          padding: const EdgeInsets.all(15),
-                          decoration: BoxDecoration(
-                              border: Border.all(color: widget.color),
-                              borderRadius: BorderRadius.circular(10)),
-                          child: Row(
-                            children: [
-                              Icon(Icons.file_present, color: widget.color),
-                              const SizedBox(width: 10),
-                              Text(S.get('open_file'))
-                            ],
-                          ),
-                        ),
-                      ),
+                child: isTeacherGlobal
+                    ? Stack(children: [
+                        Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(10),
+                            child: contentWidget),
+                        Positioned(
+                            top: 0,
+                            left: 0,
+                            child: IconButton(
+                                icon:
+                                    const Icon(Icons.delete, color: Colors.red),
+                                onPressed: () => _deleteContent(docId)))
+                      ])
+                    : contentWidget,
               );
             },
           );
         },
       ),
       floatingActionButton: isTeacherGlobal
-          ? FloatingActionButton(
-              onPressed: _addContent, child: const Icon(Icons.add))
+          ? FloatingActionButton.extended(
+              onPressed: _addContentDialog,
+              backgroundColor: widget.color,
+              icon: const Icon(Icons.add, color: Colors.white),
+              label: Text(S.get('add_content'),
+                  style: const TextStyle(color: Colors.white)))
           : null,
     );
   }
 }
 
-// -----------------------------------------------------------------------------
-// واجهة الاختبارات (الجديدة والمتطورة)
-// -----------------------------------------------------------------------------
+// ==========================================
+// 8. نظام الاختبارات الموحد (الأسئلة والامتحان)
+// ==========================================
 class QuizzesGridPage extends StatelessWidget {
   const QuizzesGridPage({super.key});
   @override
@@ -948,14 +1158,7 @@ class SubjectQuizzesListPage extends StatefulWidget {
 }
 
 class _SubjectQuizzesListPageState extends State<SubjectQuizzesListPage> {
-  void _updateQuizCount(int newCount) async {
-    await supabase
-        .from('subject_config')
-        .upsert({'id': "${widget.subject.id}_quiz", 'quiz_count': newCount});
-  }
-
-  // إضافة دالة تغيير اسم الاختبار (للتحديث في جدول quiz_metadata)
-  void _editQuizTitle(String quizId, String currentTitle) {
+  void _editQuizTitle(String docId, String currentTitle) {
     final ctrl = TextEditingController(text: currentTitle);
     showDialog(
       context: context,
@@ -968,12 +1171,17 @@ class _SubjectQuizzesListPageState extends State<SubjectQuizzesListPage> {
           TextButton(
               onPressed: () => Navigator.pop(c), child: Text(S.get('cancel'))),
           ElevatedButton(
+            style: ElevatedButton.styleFrom(
+                backgroundColor: widget.subject.color,
+                foregroundColor: Colors.white),
             onPressed: () async {
-              await supabase.from('quiz_metadata').upsert({
-                'id': quizId,
-                'subjectId': widget.subject.id,
-                'custom_title': ctrl.text
-              });
+              if (ctrl.text.isNotEmpty) {
+                await supabase.from('quiz_metadata').upsert({
+                  'id': docId,
+                  'subjectId': widget.subject.id,
+                  'custom_title': ctrl.text
+                });
+              }
               if (mounted) Navigator.pop(context);
             },
             child: Text(S.get('save')),
@@ -981,6 +1189,12 @@ class _SubjectQuizzesListPageState extends State<SubjectQuizzesListPage> {
         ],
       ),
     );
+  }
+
+  void _updateQuizCount(int newCount) async {
+    await supabase
+        .from('subject_config')
+        .upsert({'id': "${widget.subject.id}_quiz", 'quiz_count': newCount});
   }
 
   @override
@@ -996,21 +1210,25 @@ class _SubjectQuizzesListPageState extends State<SubjectQuizzesListPage> {
             .from('subject_config')
             .stream(primaryKey: ['id']).eq('id', "${widget.subject.id}_quiz"),
         builder: (context, configSnap) {
-          int count = 15;
+          int currentCount = 15;
           if (configSnap.hasData && configSnap.data!.isNotEmpty) {
-            count = configSnap.data!.first['quiz_count'] ?? 15;
+            var data = configSnap.data!.first;
+            if (data.containsKey('quiz_count')) {
+              currentCount = data['quiz_count'];
+            }
           }
 
-          // إضافة Stream آخر لجلب أسماء الاختبارات التي غيرها الأستاذ
           return StreamBuilder<List<Map<String, dynamic>>>(
             stream: supabase
                 .from('quiz_metadata')
                 .stream(primaryKey: ['id']).eq('subjectId', widget.subject.id),
-            builder: (context, quizMetaSnap) {
-              Map<String, String> customQuizTitles = {};
-              if (quizMetaSnap.hasData) {
-                for (var row in quizMetaSnap.data!) {
-                  customQuizTitles[row['id']] = row['custom_title'] ?? '';
+            builder: (context, snapshot) {
+              Map<String, String> customTitles = {};
+              if (snapshot.hasData) {
+                for (var row in snapshot.data!) {
+                  if (row.containsKey('custom_title')) {
+                    customTitles[row['id']] = row['custom_title'];
+                  }
                 }
               }
 
@@ -1019,22 +1237,17 @@ class _SubjectQuizzesListPageState extends State<SubjectQuizzesListPage> {
                   Expanded(
                     child: ListView.builder(
                       padding: const EdgeInsets.all(15),
-                      itemCount: count,
+                      itemCount: currentCount,
                       itemBuilder: (ctx, i) {
-                        String quizId = "${widget.subject.id}_quiz_${i + 1}";
-                        String displayTitle =
-                            customQuizTitles[quizId] ?? "اختبار ${i + 1}";
+                        int quizNum = i + 1;
+                        String quizId = "${widget.subject.id}_quiz_$quizNum";
+                        String displayTitle = customTitles[quizId] ??
+                            "اختبار ${S.get('lesson')} $quizNum";
 
                         return Card(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(15)),
                           child: ListTile(
-                            leading: CircleAvatar(
-                                backgroundColor:
-                                    widget.subject.color.withOpacity(0.2),
-                                child: Icon(Icons.quiz,
-                                    color: widget.subject.color)),
+                            leading:
+                                const Icon(Icons.quiz, color: Colors.orange),
                             title: Text(displayTitle,
                                 style: const TextStyle(
                                     fontWeight: FontWeight.bold)),
@@ -1044,11 +1257,11 @@ class _SubjectQuizzesListPageState extends State<SubjectQuizzesListPage> {
                                         color: Colors.blueGrey),
                                     onPressed: () =>
                                         _editQuizTitle(quizId, displayTitle))
-                                : const Icon(Icons.arrow_forward_ios, size: 16),
+                                : const Icon(Icons.arrow_forward_ios),
                             onTap: () => Navigator.push(
                                 ctx,
                                 MaterialPageRoute(
-                                    builder: (c) => QuizPlayArea(
+                                    builder: (_) => QuizPlayArea(
                                         quizId: quizId,
                                         color: widget.subject.color,
                                         title: displayTitle))),
@@ -1068,15 +1281,18 @@ class _SubjectQuizzesListPageState extends State<SubjectQuizzesListPage> {
                               icon: const Icon(Icons.remove_circle,
                                   color: Colors.red, size: 35),
                               onPressed: () {
-                                if (count > 1) _updateQuizCount(count - 1);
+                                if (currentCount > 1) {
+                                  _updateQuizCount(currentCount - 1);
+                                }
                               }),
-                          Text("الاختبارات: $count",
+                          Text("الاختبارات الحالية: $currentCount",
                               style: const TextStyle(
                                   fontSize: 18, fontWeight: FontWeight.bold)),
                           IconButton(
                               icon: const Icon(Icons.add_circle,
                                   color: Colors.green, size: 35),
-                              onPressed: () => _updateQuizCount(count + 1)),
+                              onPressed: () =>
+                                  _updateQuizCount(currentCount + 1)),
                         ],
                       ),
                     )
@@ -1106,45 +1322,47 @@ class QuizPlayArea extends StatefulWidget {
 class _QuizPlayAreaState extends State<QuizPlayArea> {
   bool isUploadingExam = false;
 
-  // دالة لرفع ملف الامتحان (PDF أو صورة)
   Future<void> _uploadExamPaper() async {
-    FilePickerResult? result =
-        await FilePicker.platform.pickFiles(withData: true);
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf', 'png', 'jpg', 'jpeg'],
+        withData: true);
     if (result != null) {
       setState(() => isUploadingExam = true);
       try {
         String fileName =
             "exam_${DateTime.now().millisecondsSinceEpoch}_${result.files.single.name}";
-        String path = 'quiz_papers/${widget.quizId}/$fileName';
-
+        String storagePath = 'quiz_papers/${widget.quizId}/$fileName';
         if (kIsWeb) {
-          await supabase.storage
-              .from('jaafari_storage')
-              .uploadBinary(path, result.files.single.bytes!);
+          Uint8List? fileBytes = result.files.single.bytes;
+          if (fileBytes != null) {
+            await supabase.storage
+                .from('jaafari_storage')
+                .uploadBinary(storagePath, fileBytes);
+          }
         } else {
-          await supabase.storage
-              .from('jaafari_storage')
-              .upload(path, File(result.files.single.path!));
+          if (result.files.single.path != null) {
+            File file = File(result.files.single.path!);
+            await supabase.storage
+                .from('jaafari_storage')
+                .upload(storagePath, file);
+          }
         }
-
-        String url =
-            supabase.storage.from('jaafari_storage').getPublicUrl(path);
-
-        // حفظ الرابط في جدول quiz_metadata
+        String downloadUrl =
+            supabase.storage.from('jaafari_storage').getPublicUrl(storagePath);
         await supabase.from('quiz_metadata').upsert({
           'id': widget.quizId,
-          'exam_paper_url': url,
+          'exam_paper_url': downloadUrl,
           'is_pdf': result.files.single.extension == 'pdf'
         });
       } catch (e) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text("خطأ: $e")));
+            .showSnackBar(SnackBar(content: Text("خطأ في الرفع: $e")));
       }
       setState(() => isUploadingExam = false);
     }
   }
 
-  // دالة لإنشاء سؤال متعدد الخيارات QCM
   void _addQuestionDialog() {
     final qCtrl = TextEditingController();
     final opt1 = TextEditingController();
@@ -1152,7 +1370,6 @@ class _QuizPlayAreaState extends State<QuizPlayArea> {
     final opt3 = TextEditingController();
     final opt4 = TextEditingController();
     int correctOpt = 1;
-
     showDialog(
       context: context,
       builder: (c) => StatefulBuilder(
@@ -1165,7 +1382,6 @@ class _QuizPlayAreaState extends State<QuizPlayArea> {
                 TextField(
                     controller: qCtrl,
                     decoration: InputDecoration(labelText: S.get('q_text'))),
-                const SizedBox(height: 10),
                 TextField(
                     controller: opt1,
                     decoration: const InputDecoration(labelText: "خيار 1")),
@@ -1178,22 +1394,17 @@ class _QuizPlayAreaState extends State<QuizPlayArea> {
                 TextField(
                     controller: opt4,
                     decoration: const InputDecoration(labelText: "خيار 4")),
-                const SizedBox(height: 15),
                 DropdownButton<int>(
                     value: correctOpt,
                     items: [1, 2, 3, 4]
                         .map((e) => DropdownMenuItem(
-                            value: e,
-                            child: Text("الجواب الصحيح: خيار رقم $e")))
+                            value: e, child: Text("الجواب الصحيح: $e")))
                         .toList(),
                     onChanged: (v) => setStateDialog(() => correctOpt = v!)),
               ],
             ),
           ),
           actions: [
-            TextButton(
-                onPressed: () => Navigator.pop(c),
-                child: Text(S.get('cancel'))),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                   backgroundColor: widget.color, foregroundColor: Colors.white),
@@ -1203,7 +1414,7 @@ class _QuizPlayAreaState extends State<QuizPlayArea> {
                     'quizId': widget.quizId,
                     'q': qCtrl.text,
                     'opts': [opt1.text, opt2.text, opt3.text, opt4.text],
-                    'ans': correctOpt - 1, // لأن المصفوفة تبدأ من 0
+                    'ans': correctOpt - 1,
                     'created_at': DateTime.now().toIso8601String()
                   });
                   if (mounted) Navigator.pop(context);
@@ -1217,8 +1428,35 @@ class _QuizPlayAreaState extends State<QuizPlayArea> {
     );
   }
 
-  void _deleteQuestion(dynamic docId) async {
-    await supabase.from('quiz_questions').delete().eq('id', docId);
+  void _deleteQuestion(dynamic docId) {
+    showDialog(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: Text(S.get('confirm_delete'),
+            style: const TextStyle(color: Colors.red)),
+        content: Text(S.get('delete_msg')),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(c), child: Text(S.get('cancel'))),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red, foregroundColor: Colors.white),
+            onPressed: () async {
+              Navigator.pop(c);
+              try {
+                await supabase.from('quiz_questions').delete().eq('id', docId);
+                ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('تم الحذف بنجاح')));
+              } catch (e) {
+                ScaffoldMessenger.of(context)
+                    .showSnackBar(SnackBar(content: Text('تعذر الحذف: $e')));
+              }
+            },
+            child: Text(S.get('delete')),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -1231,26 +1469,20 @@ class _QuizPlayAreaState extends State<QuizPlayArea> {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // ================== قسم 1: ورقة الامتحان المرفقة ==================
+            // ================== القسم 1: ورقة الامتحان ==================
             StreamBuilder<List<Map<String, dynamic>>>(
               stream: supabase
                   .from('quiz_metadata')
                   .stream(primaryKey: ['id']).eq('id', widget.quizId),
               builder: (context, metaSnap) {
-                if (!metaSnap.hasData || metaSnap.data!.isEmpty) {
-                  return isTeacherGlobal
-                      ? Padding(
-                          padding: const EdgeInsets.all(20),
-                          child: Text("لم تقم برفع ملف الامتحان بعد.",
-                              style: TextStyle(color: Colors.grey[600])))
-                      : const SizedBox();
+                bool hasExamPaper = metaSnap.hasData &&
+                    metaSnap.data!.isNotEmpty &&
+                    metaSnap.data!.first.containsKey('exam_paper_url') &&
+                    metaSnap.data!.first['exam_paper_url'] != null;
+
+                if (!hasExamPaper && !isTeacherGlobal) {
+                  return const SizedBox();
                 }
-
-                var data = metaSnap.data!.first;
-                if (data['exam_paper_url'] == null) return const SizedBox();
-
-                String url = data['exam_paper_url'];
-                bool isPdf = data['is_pdf'] ?? false;
 
                 return Container(
                   width: double.infinity,
@@ -1268,22 +1500,44 @@ class _QuizPlayAreaState extends State<QuizPlayArea> {
                               fontWeight: FontWeight.bold,
                               color: widget.color)),
                       const SizedBox(height: 10),
-                      if (!isPdf)
-                        ClipRRect(
-                            borderRadius: BorderRadius.circular(10),
-                            child: Image.network(url,
-                                height: 250, fit: BoxFit.cover)),
-                      const SizedBox(height: 15),
-                      ElevatedButton.icon(
-                        onPressed: () => launchUrl(Uri.parse(url),
-                            mode: LaunchMode.externalApplication),
-                        icon: const Icon(Icons.open_in_new),
-                        label: Text(
-                            isPdf ? "تحميل وفتح ملف الـ PDF" : "تكبير الصورة"),
-                        style: ElevatedButton.styleFrom(
-                            backgroundColor: widget.color,
-                            foregroundColor: Colors.white),
-                      ),
+                      if (!hasExamPaper) ...[
+                        const Icon(Icons.insert_drive_file,
+                            size: 50, color: Colors.grey),
+                        const SizedBox(height: 10),
+                        Text("لم يتم إرفاق ورقة PDF للامتحان بعد.",
+                            style: TextStyle(color: Colors.grey[600])),
+                      ] else ...[
+                        Builder(builder: (context) {
+                          var data = metaSnap.data!.first;
+                          String url = data['exam_paper_url'];
+                          bool isPdf = data['is_pdf'] ?? false;
+                          return Column(
+                            children: [
+                              if (!isPdf)
+                                ClipRRect(
+                                    borderRadius: BorderRadius.circular(10),
+                                    child: Image.network(url,
+                                        height: 250, fit: BoxFit.cover)),
+                              const SizedBox(height: 15),
+                              ElevatedButton.icon(
+                                onPressed: () async {
+                                  if (await canLaunchUrl(Uri.parse(url))) {
+                                    await launchUrl(Uri.parse(url),
+                                        mode: LaunchMode.externalApplication);
+                                  }
+                                },
+                                icon: const Icon(Icons.open_in_new),
+                                label: Text(isPdf
+                                    ? "تحميل/فتح ملف الـ PDF"
+                                    : "تكبير الصورة"),
+                                style: ElevatedButton.styleFrom(
+                                    backgroundColor: widget.color,
+                                    foregroundColor: Colors.white),
+                              ),
+                            ],
+                          );
+                        })
+                      ]
                     ],
                   ),
                 );
@@ -1292,7 +1546,7 @@ class _QuizPlayAreaState extends State<QuizPlayArea> {
 
             const Divider(thickness: 2),
 
-            // ================== قسم 2: أسئلة الاختبار التفاعلية (QCM) ==================
+            // ================== القسم 2: الأسئلة التفاعلية ==================
             Padding(
               padding: const EdgeInsets.all(15),
               child: Text("الأسئلة التفاعلية للاختبار:",
@@ -1308,14 +1562,15 @@ class _QuizPlayAreaState extends State<QuizPlayArea> {
                   .eq('quizId', widget.quizId)
                   .order('created_at', ascending: true),
               builder: (context, snapshot) {
-                if (!snapshot.hasData) return const CircularProgressIndicator();
-                var questions = snapshot.data!;
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const CircularProgressIndicator();
+                }
+                var questions = snapshot.data ?? [];
                 if (questions.isEmpty) {
                   return const Padding(
                       padding: EdgeInsets.all(20),
-                      child: Text("لا توجد أسئلة تفاعلية مضافة بعد."));
+                      child: Text("لا توجد أسئلة تفاعلية بعد."));
                 }
-
                 return ListView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
@@ -1354,12 +1609,10 @@ class _QuizPlayAreaState extends State<QuizPlayArea> {
                                       padding: const EdgeInsets.only(bottom: 5),
                                       child: Text("- ${options[i]}",
                                           style: TextStyle(
-                                              color: (isTeacherGlobal &&
-                                                      i == qData['ans'])
+                                              color: i == qData['ans']
                                                   ? Colors.green
                                                   : Colors.black,
-                                              fontWeight: (isTeacherGlobal &&
-                                                      i == qData['ans'])
+                                              fontWeight: i == qData['ans']
                                                   ? FontWeight.bold
                                                   : FontWeight.normal)),
                                     )),
@@ -1371,7 +1624,6 @@ class _QuizPlayAreaState extends State<QuizPlayArea> {
                 );
               },
             ),
-            const SizedBox(height: 80), // مسافة للأزرار العائمة
           ],
         ),
       ),
@@ -1383,7 +1635,7 @@ class _QuizPlayAreaState extends State<QuizPlayArea> {
                   const CircularProgressIndicator()
                 else
                   FloatingActionButton.extended(
-                      heroTag: "btn_upload_exam",
+                      heroTag: "btn1",
                       onPressed: _uploadExamPaper,
                       backgroundColor: Colors.amber,
                       icon: const Icon(Icons.attach_file, color: Colors.black),
@@ -1391,11 +1643,11 @@ class _QuizPlayAreaState extends State<QuizPlayArea> {
                           style: TextStyle(color: Colors.black))),
                 const SizedBox(height: 10),
                 FloatingActionButton.extended(
-                    heroTag: "btn_add_qcm",
+                    heroTag: "btn2",
                     onPressed: _addQuestionDialog,
                     backgroundColor: widget.color,
-                    icon: const Icon(Icons.add_task, color: Colors.white),
-                    label: Text("إضافة سؤال (QCM)",
+                    icon: const Icon(Icons.add, color: Colors.white),
+                    label: Text(S.get('add_q'),
                         style: const TextStyle(color: Colors.white))),
               ],
             )
@@ -1404,45 +1656,63 @@ class _QuizPlayAreaState extends State<QuizPlayArea> {
   }
 }
 
-// -----------------------------------------------------------------------------
-// صفحة الحساب الشخصي
-// -----------------------------------------------------------------------------
+// ==========================================
+// 9. حسابي والدعم
+// ==========================================
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
   void _contactSupport() async {
     final Uri emailLaunchUri = Uri(
         scheme: 'mailto',
         path: 'bilal38jaafari@gmail.com',
-        queryParameters: {'subject': 'Support Jaafari Guide'});
-    launchUrl(emailLaunchUri);
+        queryParameters: {'subject': 'دعم تطبيق Jaafari Guide'});
+    if (await canLaunchUrl(emailLaunchUri)) await launchUrl(emailLaunchUri);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(S.get('profile'))),
+      appBar: AppBar(
+          title: Text(S.get('profile'),
+              style: const TextStyle(fontWeight: FontWeight.bold)),
+          centerTitle: true),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          const Center(
-              child: CircleAvatar(
-                  radius: 50, child: Icon(Icons.person, size: 50))),
-          const SizedBox(height: 20),
+          const CircleAvatar(
+              radius: 50,
+              backgroundColor: Colors.deepPurple,
+              child: Icon(Icons.person, size: 50, color: Colors.white)),
+          const SizedBox(height: 15),
           Center(
               child: Text(currentUserNameGlobal,
                   style: const TextStyle(
                       fontSize: 22, fontWeight: FontWeight.bold))),
+          Center(
+              child: Text(currentUserEmailGlobal,
+                  style: const TextStyle(fontSize: 16, color: Colors.grey))),
+          Center(
+              child: Text(isTeacherGlobal ? "أستاذ / مدير 👨‍🏫" : "تلميذ 🎓",
+                  style: TextStyle(
+                      color: isTeacherGlobal
+                          ? Colors.redAccent
+                          : Colors.blueAccent,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18))),
           const SizedBox(height: 30),
           ListTile(
               leading: const Icon(Icons.dark_mode),
-              title: Text(S.get('dark_mode')),
+              title: Text(S.get('dark_mode'),
+                  style: const TextStyle(fontWeight: FontWeight.bold)),
               trailing: Switch(
                   value: themeNotifier.value == ThemeMode.dark,
                   onChanged: (v) => themeNotifier.value =
                       v ? ThemeMode.dark : ThemeMode.light)),
           ListTile(
             leading: const Icon(Icons.language),
-            title: Text(S.get('lang')),
+            title: Text(S.get('lang'),
+                style: const TextStyle(fontWeight: FontWeight.bold)),
+            trailing: const Icon(Icons.arrow_drop_down),
             onTap: () => showModalBottomSheet(
                 context: context,
                 builder: (c) =>
@@ -1463,14 +1733,19 @@ class ProfilePage extends StatelessWidget {
           ),
           ListTile(
               leading: const Icon(Icons.support_agent),
-              title: Text(S.get('support')),
+              title: Text(S.get('support'),
+                  style: const TextStyle(fontWeight: FontWeight.bold)),
               onTap: _contactSupport),
           const Divider(height: 40),
           ListTile(
             leading: const Icon(Icons.logout, color: Colors.red),
             title: Text(S.get('logout'),
-                style: const TextStyle(color: Colors.red)),
-            onTap: () => supabase.auth.signOut(),
+                style: const TextStyle(
+                    color: Colors.red, fontWeight: FontWeight.bold)),
+            onTap: () async {
+              await supabase.auth.signOut();
+              isTeacherGlobal = false;
+            },
           ),
         ],
       ),

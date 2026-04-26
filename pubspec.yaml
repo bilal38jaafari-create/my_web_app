@@ -15,20 +15,19 @@ dependencies:
   supabase_flutter: ^2.3.4
   file_picker: ^8.0.0
   url_launcher: ^6.2.1
-  
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^6.0.0
-  flutter_launcher_icons: ^0.14.4
+  flutter_launcher_icons: ^0.13.1
 
 flutter:
   uses-material-design: true
   assets:
-    - assets/app_icon.png
+    - assets/icon.png  # تأكد أن هذا الاسم يطابق اسم ملفك في مجلد assets
 
 flutter_launcher_icons:
   android: true
   ios: true
-  image_path: "assets/app_icon.png"
-  remove_alpha_ios: true
+  image_path: "assets/icon.png"
+  adaptive_icon_background: "#FFFFFF" # اختياري: لون خلفية للأيقونات في أندرويد الحديث
