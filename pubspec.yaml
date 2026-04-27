@@ -26,17 +26,17 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
-    - assets/icon.png  # تأكد أن هذا الاسم يطابق اسم ملفك في مجلد assets
+    - assets/logo.png  # تأكد أن هذا الاسم يطابق اسم ملفك في مجلد assets
 
 flutter_launcher_icons:
   android: true
   ios: true
   # هذا السطر يجعل الصورة تمسك الإطار بالكامل في أندرويد
-  image_path: "assets/icon.png" 
+  image_path: "assets/logo.png" 
   
   # --- إعدادات أندرويد لملء المربع (adaptive icons) ---
   # نستخدم الصورة نفسها كواجهة (Foreground)
-  adaptive_icon_foreground: "assets/icon.png"
+  adaptive_icon_foreground: "assets/logo.png"
   # نستخدم لون خلفية سادة ليظهر خلف الصورة إذا لم تكن شفافة تماماً
   # وإذا كانت صورتك تملأ المربع، فلن يظهر هذا اللون.
   adaptive_icon_background: "#FFFFFF" # يمكنك تغييره للون صورتك المهيمن
