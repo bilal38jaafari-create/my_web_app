@@ -1,14 +1,41 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:supabase_flutter/supabase_flutter.dart'
+    hide User; // إخفاء User لمنع التعارض مع Firebase
 import 'package:file_picker/file_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart'; // مكتبة الأوفلاين
 import 'dart:ui';
 import 'dart:io' show File;
 import 'dart:typed_data';
+import 'dart:convert'; // لتحويل البيانات لتعمل أوفلاين
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'firebase_options.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 // ==========================================
-// 1. نظام الترجمة والثوابت العالمية
+// 1. نظام الذاكرة المحلية (Cache Manager) للأوفلاين
+// ==========================================
+late SharedPreferences prefs;
+
+class CacheManager {
+  static void save(String key, List<Map<String, dynamic>> data) {
+    prefs.setString(key, jsonEncode(data));
+  }
+
+  static List<Map<String, dynamic>> load(String key) {
+    final String? cachedStr = prefs.getString(key);
+    if (cachedStr != null) {
+      List<dynamic> decoded = jsonDecode(cachedStr);
+      return decoded.map((e) => e as Map<String, dynamic>).toList();
+    }
+    return [];
+  }
+}
+
+// ==========================================
+// 2. نظام الترجمة والثوابت العالمية
 // ==========================================
 class S {
   static const Map<String, Map<String, String>> _data = {
@@ -76,6 +103,7 @@ class S {
       'delete': 'حذف',
       'confirm_delete': 'تأكيد الحذف',
       'delete_msg': 'هل أنت متأكد من أنك تريد الحذف نهائياً؟',
+      'offline_msg': 'أنت الآن تتصفح بدون إنترنت.',
     },
     'en': {
       'app_title': 'Jaafari Guide',
@@ -141,6 +169,7 @@ class S {
       'delete': 'Delete',
       'confirm_delete': 'Confirm Deletion',
       'delete_msg': 'Are you sure you want to delete this permanently?',
+      'offline_msg': 'You are offline. Showing cached data.',
     },
   };
   static String get(String key) =>
@@ -156,7 +185,7 @@ String currentUserNameGlobal = '';
 final supabase = Supabase.instance.client;
 
 // ==========================================
-// 2. دالة التكبير الخاصة بالصور (Zoom Feature)
+// 3. دالة التكبير الخاصة بالصور (Zoom Feature)
 // ==========================================
 void showFullScreenImage(BuildContext context, String imageUrl) {
   Navigator.push(
@@ -174,17 +203,24 @@ void showFullScreenImage(BuildContext context, String imageUrl) {
                     panEnabled: true,
                     minScale: 0.5,
                     maxScale: 4.0, // نسبة التكبير القصوى
-                    child: Image.network(imageUrl, fit: BoxFit.contain),
+                    child: Image.network(imageUrl,
+                        fit: BoxFit.contain,
+                        errorBuilder: (c, e, s) => const Icon(
+                            Icons.broken_image,
+                            size: 100,
+                            color: Colors.white)),
                   ),
                 ),
               )));
 }
 
 // ==========================================
-// 3. دالة التشغيل الرئيسية
+// 4. دالة التشغيل الرئيسية
 // ==========================================
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  prefs = await SharedPreferences.getInstance(); // تفعيل الذاكرة المحلية
+
   try {
     await Supabase.initialize(
       url: 'https://vlyikngandsoznwzqtgp.supabase.co',
@@ -228,7 +264,7 @@ class JaafariGuideApp extends StatelessWidget {
 }
 
 // ==========================================
-// 4. نظام توجيه الدخول وتذكر الحساب
+// 5. نظام توجيه الدخول وتذكر الحساب
 // ==========================================
 class AuthWrapper extends StatefulWidget {
   const AuthWrapper({super.key});
@@ -262,8 +298,13 @@ class UserDataFetcher extends StatelessWidget {
 
   Future<Map<String, dynamic>?> _fetchUserData() async {
     try {
-      return await supabase.from('users').select().eq('id', uid).maybeSingle();
+      final data =
+          await supabase.from('users').select().eq('id', uid).maybeSingle();
+      if (data != null) CacheManager.save('user_profile', [data]);
+      return data;
     } catch (e) {
+      final cached = CacheManager.load('user_profile');
+      if (cached.isNotEmpty) return cached.first;
       return null;
     }
   }
@@ -301,7 +342,7 @@ class UserDataFetcher extends StatelessWidget {
 }
 
 // ==========================================
-// 5. واجهة تسجيل الدخول الزجاجية
+// 6. واجهة تسجيل الدخول الزجاجية
 // ==========================================
 class AppleGlassLoginScreen extends StatefulWidget {
   const AppleGlassLoginScreen({super.key});
@@ -512,7 +553,7 @@ class _AppleGlassLoginScreenState extends State<AppleGlassLoginScreen> {
 }
 
 // ==========================================
-// 6. التنقل الرئيسي وقائمة المواد
+// 7. التنقل الرئيسي وقائمة المواد
 // ==========================================
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
@@ -731,12 +772,18 @@ class _SubjectLessonsPageState extends State<SubjectLessonsPage> {
                 .from('lesson_metadata')
                 .stream(primaryKey: ['id']).eq('subjectId', widget.subject.id),
             builder: (context, snapshot) {
-              Map<String, String> customTitles = {};
+              List<Map<String, dynamic>> metaDataList = [];
               if (snapshot.hasData) {
-                for (var row in snapshot.data!) {
-                  if (row.containsKey('custom_title'))
-                    customTitles[row['id']] = row['custom_title'];
-                }
+                metaDataList = snapshot.data!;
+                CacheManager.save('meta_${widget.subject.id}', metaDataList);
+              } else {
+                metaDataList = CacheManager.load('meta_${widget.subject.id}');
+              }
+
+              Map<String, String> customTitles = {};
+              for (var row in metaDataList) {
+                if (row.containsKey('custom_title'))
+                  customTitles[row['id']] = row['custom_title'];
               }
 
               return Column(
@@ -822,7 +869,7 @@ class _SubjectLessonsPageState extends State<SubjectLessonsPage> {
 }
 
 // ==========================================
-// 7. صفحة محتوى الدرس (مع التكبير و الـ PDF المدمج)
+// 8. صفحة محتوى الدرس (تدعم التكبير والأوفلاين)
 // ==========================================
 class LessonContentPage extends StatefulWidget {
   final String lessonId;
@@ -839,7 +886,6 @@ class LessonContentPage extends StatefulWidget {
 
 class _LessonContentPageState extends State<LessonContentPage> {
   bool isUploading = false;
-
   Future<String?> _uploadFileToSupabase() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
@@ -1005,13 +1051,33 @@ class _LessonContentPageState extends State<LessonContentPage> {
             .eq('lessonId', widget.lessonId)
             .order('created_at', ascending: true),
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting)
-            return const Center(child: CircularProgressIndicator());
-          if (!snapshot.hasData || snapshot.data!.isEmpty)
-            return const Center(
-                child: Text("لا يوجد محتوى", style: TextStyle(fontSize: 18)));
+          List<Map<String, dynamic>> contents = [];
 
-          var contents = snapshot.data!;
+          if (snapshot.hasData) {
+            contents = snapshot.data!;
+            CacheManager.save('contents_${widget.lessonId}', contents);
+          } else {
+            contents = CacheManager.load('contents_${widget.lessonId}');
+          }
+
+          if (contents.isEmpty &&
+              snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (contents.isEmpty) {
+            return Center(
+                child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text("لا يوجد محتوى", style: const TextStyle(fontSize: 18)),
+                if (snapshot.hasError)
+                  Text(S.get('offline_msg'),
+                      style: const TextStyle(color: Colors.red)),
+              ],
+            ));
+          }
+
           return ListView.builder(
             padding: const EdgeInsets.all(20),
             itemCount: contents.length,
@@ -1021,7 +1087,6 @@ class _LessonContentPageState extends State<LessonContentPage> {
               String data = block['data'];
               dynamic docId = block['id'];
               Widget contentWidget;
-
               if (type == 'file') {
                 bool isImage = data.toLowerCase().contains('.png') ||
                     data.toLowerCase().contains('.jpg') ||
@@ -1033,7 +1098,12 @@ class _LessonContentPageState extends State<LessonContentPage> {
                     onTap: () => showFullScreenImage(context, data),
                     child: ClipRRect(
                         borderRadius: BorderRadius.circular(15),
-                        child: Image.network(data, fit: BoxFit.cover)),
+                        child: Image.network(data,
+                            fit: BoxFit.cover,
+                            errorBuilder: (c, e, s) => const Icon(
+                                Icons.wifi_off,
+                                size: 50,
+                                color: Colors.red))),
                   );
                 } else {
                   contentWidget = InkWell(
@@ -1108,7 +1178,7 @@ class _LessonContentPageState extends State<LessonContentPage> {
 }
 
 // ==========================================
-// 8. واجهة الاختبارات (مع التكبير المدمج)
+// 9. واجهة الاختبارات (مع التكبير المدمج والأوفلاين)
 // ==========================================
 class QuizzesGridPage extends StatelessWidget {
   const QuizzesGridPage({super.key});
@@ -1214,12 +1284,20 @@ class _SubjectQuizzesListPageState extends State<SubjectQuizzesListPage> {
                 .from('quiz_metadata')
                 .stream(primaryKey: ['id']).eq('subjectId', widget.subject.id),
             builder: (context, snapshot) {
-              Map<String, String> customTitles = {};
+              List<Map<String, dynamic>> metaDataList = [];
               if (snapshot.hasData) {
-                for (var row in snapshot.data!) {
-                  if (row.containsKey('custom_title'))
-                    customTitles[row['id']] = row['custom_title'];
-                }
+                metaDataList = snapshot.data!;
+                CacheManager.save(
+                    'quiz_meta_${widget.subject.id}', metaDataList);
+              } else {
+                metaDataList =
+                    CacheManager.load('quiz_meta_${widget.subject.id}');
+              }
+
+              Map<String, String> customTitles = {};
+              for (var row in metaDataList) {
+                if (row.containsKey('custom_title'))
+                  customTitles[row['id']] = row['custom_title'];
               }
 
               return Column(
@@ -1310,7 +1388,6 @@ class QuizPlayArea extends StatefulWidget {
 
 class _QuizPlayAreaState extends State<QuizPlayArea> {
   bool isUploadingExam = false;
-
   Future<void> _uploadExamPaper() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
@@ -1463,10 +1540,19 @@ class _QuizPlayAreaState extends State<QuizPlayArea> {
                   .from('quiz_metadata')
                   .stream(primaryKey: ['id']).eq('id', widget.quizId),
               builder: (context, metaSnap) {
-                bool hasExamPaper = metaSnap.hasData &&
-                    metaSnap.data!.isNotEmpty &&
-                    metaSnap.data!.first.containsKey('exam_paper_url') &&
-                    metaSnap.data!.first['exam_paper_url'] != null;
+                List<Map<String, dynamic>> metaDataList = [];
+                if (metaSnap.hasData) {
+                  metaDataList = metaSnap.data!;
+                  CacheManager.save('quiz_exam_${widget.quizId}', metaDataList);
+                } else {
+                  metaDataList =
+                      CacheManager.load('quiz_exam_${widget.quizId}');
+                }
+
+                bool hasExamPaper = metaDataList.isNotEmpty &&
+                    metaDataList.first.containsKey('exam_paper_url') &&
+                    metaDataList.first['exam_paper_url'] != null;
+
                 if (!hasExamPaper && !isTeacherGlobal) return const SizedBox();
 
                 return Container(
@@ -1493,7 +1579,7 @@ class _QuizPlayAreaState extends State<QuizPlayArea> {
                             style: TextStyle(color: Colors.grey[600])),
                       ] else ...[
                         Builder(builder: (context) {
-                          var data = metaSnap.data!.first;
+                          var data = metaDataList.first;
                           String url = data['exam_paper_url'];
                           bool isPdf = data['is_pdf'] ?? false;
                           return Column(
@@ -1505,7 +1591,12 @@ class _QuizPlayAreaState extends State<QuizPlayArea> {
                                   child: ClipRRect(
                                       borderRadius: BorderRadius.circular(10),
                                       child: Image.network(url,
-                                          height: 250, fit: BoxFit.cover)),
+                                          height: 250,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (c, e, s) => const Icon(
+                                              Icons.wifi_off,
+                                              size: 50,
+                                              color: Colors.red))),
                                 ),
                               const SizedBox(height: 15),
                               ElevatedButton.icon(
@@ -1553,13 +1644,24 @@ class _QuizPlayAreaState extends State<QuizPlayArea> {
                   .eq('quizId', widget.quizId)
                   .order('created_at', ascending: true),
               builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting)
+                List<Map<String, dynamic>> questions = [];
+                if (snapshot.hasData) {
+                  questions = snapshot.data!;
+                  CacheManager.save('quiz_q_${widget.quizId}', questions);
+                } else {
+                  questions = CacheManager.load('quiz_q_${widget.quizId}');
+                }
+
+                if (questions.isEmpty &&
+                    snapshot.connectionState == ConnectionState.waiting) {
                   return const CircularProgressIndicator();
-                var questions = snapshot.data ?? [];
+                }
+
                 if (questions.isEmpty)
                   return const Padding(
                       padding: EdgeInsets.all(20),
                       child: Text("لا توجد أسئلة تفاعلية بعد."));
+
                 return ListView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
@@ -1645,7 +1747,7 @@ class _QuizPlayAreaState extends State<QuizPlayArea> {
 }
 
 // ==========================================
-// 9. صفحة الملف الشخصي والدعم
+// 10. صفحة الملف الشخصي والدعم
 // ==========================================
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
