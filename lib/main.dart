@@ -1,17 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:supabase_flutter/supabase_flutter.dart'
-    hide User; // إخفاء User لمنع التعارض مع Firebase
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:shared_preferences/shared_preferences.dart'; // مكتبة الأوفلاين
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:cached_network_image/cached_network_image.dart'; // المكتبة السحرية للأوفلاين
 import 'dart:ui';
 import 'dart:io' show File;
 import 'dart:typed_data';
-import 'dart:convert'; // لتحويل البيانات لتعمل أوفلاين
+import 'dart:convert';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'firebase_options.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 // ==========================================
@@ -103,7 +99,7 @@ class S {
       'delete': 'حذف',
       'confirm_delete': 'تأكيد الحذف',
       'delete_msg': 'هل أنت متأكد من أنك تريد الحذف نهائياً؟',
-      'offline_msg': 'أنت الآن تتصفح بدون إنترنت.',
+      'offline_msg': 'أنت الآن تتصفح بدون إنترنت. (بيانات محفوظة)',
     },
     'en': {
       'app_title': 'Jaafari Guide',
@@ -185,7 +181,7 @@ String currentUserNameGlobal = '';
 final supabase = Supabase.instance.client;
 
 // ==========================================
-// 3. دالة التكبير الخاصة بالصور (Zoom Feature)
+// 3. دالة التكبير الخاصة بالصور (Zoom Feature) تدعم الأوفلاين
 // ==========================================
 void showFullScreenImage(BuildContext context, String imageUrl) {
   Navigator.push(
@@ -203,12 +199,23 @@ void showFullScreenImage(BuildContext context, String imageUrl) {
                     panEnabled: true,
                     minScale: 0.5,
                     maxScale: 4.0, // نسبة التكبير القصوى
-                    child: Image.network(imageUrl,
-                        fit: BoxFit.contain,
-                        errorBuilder: (c, e, s) => const Icon(
-                            Icons.broken_image,
-                            size: 100,
-                            color: Colors.white)),
+                    // استخدمنا CachedNetworkImage هنا لتعمل بدون إنترنت إذا تم فتحها مسبقاً
+                    child: CachedNetworkImage(
+                      imageUrl: imageUrl,
+                      fit: BoxFit.contain,
+                      placeholder: (context, url) =>
+                          const CircularProgressIndicator(color: Colors.white),
+                      errorWidget: (context, url, error) => const Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.wifi_off, size: 80, color: Colors.white54),
+                          SizedBox(height: 15),
+                          Text("تحتاج للإنترنت لرؤية هذه الصورة للمرة الأولى",
+                              style: TextStyle(
+                                  color: Colors.white70, fontSize: 16)),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
               )));
@@ -264,7 +271,7 @@ class JaafariGuideApp extends StatelessWidget {
 }
 
 // ==========================================
-// 5. نظام توجيه الدخول وتذكر الحساب
+// 5. نظام توجيه الدخول وتذكر الحساب (مع إصلاح التحميل اللانهائي)
 // ==========================================
 class AuthWrapper extends StatefulWidget {
   const AuthWrapper({super.key});
@@ -298,11 +305,17 @@ class UserDataFetcher extends StatelessWidget {
 
   Future<Map<String, dynamic>?> _fetchUserData() async {
     try {
-      final data =
-          await supabase.from('users').select().eq('id', uid).maybeSingle();
+      // ⚠️ الحل العبقري: إضافة timeout لكي لا ينتظر التطبيق للأبد بدون إنترنت
+      final data = await supabase
+          .from('users')
+          .select()
+          .eq('id', uid)
+          .maybeSingle()
+          .timeout(const Duration(seconds: 3));
       if (data != null) CacheManager.save('user_profile', [data]);
       return data;
     } catch (e) {
+      // إذا انقطع الإنترنت، سيدخل هنا فوراً ويجلب البيانات المحفوظة
       final cached = CacheManager.load('user_profile');
       if (cached.isNotEmpty) return cached.first;
       return null;
@@ -869,7 +882,7 @@ class _SubjectLessonsPageState extends State<SubjectLessonsPage> {
 }
 
 // ==========================================
-// 8. صفحة محتوى الدرس (تدعم التكبير والأوفلاين)
+// 8. صفحة محتوى الدرس (تدعم التكبير والأوفلاين للصور)
 // ==========================================
 class LessonContentPage extends StatefulWidget {
   final String lessonId;
@@ -1070,8 +1083,9 @@ class _LessonContentPageState extends State<LessonContentPage> {
                 child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text("لا يوجد محتوى", style: const TextStyle(fontSize: 18)),
-                if (snapshot.hasError)
+                const Text("لا يوجد محتوى", style: TextStyle(fontSize: 18)),
+                if (snapshot.hasError ||
+                    snapshot.connectionState == ConnectionState.waiting)
                   Text(S.get('offline_msg'),
                       style: const TextStyle(color: Colors.red)),
               ],
@@ -1094,24 +1108,41 @@ class _LessonContentPageState extends State<LessonContentPage> {
                 bool isPdf = data.toLowerCase().contains('.pdf');
 
                 if (isImage) {
+                  // ⚠️ التعديل المهم: استخدام CachedNetworkImage لحفظ الصور في الهاتف
                   contentWidget = GestureDetector(
                     onTap: () => showFullScreenImage(context, data),
                     child: ClipRRect(
                         borderRadius: BorderRadius.circular(15),
-                        child: Image.network(data,
+                        child: CachedNetworkImage(
+                            imageUrl: data,
                             fit: BoxFit.cover,
-                            errorBuilder: (c, e, s) => const Icon(
-                                Icons.wifi_off,
-                                size: 50,
-                                color: Colors.red))),
+                            placeholder: (c, u) => Container(
+                                height: 150,
+                                color: Colors.grey.withOpacity(0.2),
+                                child: const Center(
+                                    child: CircularProgressIndicator())),
+                            errorWidget: (c, e, s) => Container(
+                                height: 150,
+                                color: Colors.grey.withOpacity(0.2),
+                                child: const Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(Icons.wifi_off,
+                                          size: 50, color: Colors.red),
+                                      Text("تحتاج إنترنت لرؤية الصورة")
+                                    ])))),
                   );
                 } else {
                   contentWidget = InkWell(
+                    // ⚠️ حل مشكلة الـ PDF للتلميذ بجعله يفتح في المتصفح الخارجي دائماً
                     onTap: () async {
-                      if (await canLaunchUrl(Uri.parse(data))) {
+                      try {
                         await launchUrl(Uri.parse(data),
-                            mode:
-                                LaunchMode.inAppWebView); // فتح الـ PDF داخلياً
+                            mode: LaunchMode.externalApplication);
+                      } catch (e) {
+                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                            content: Text(
+                                'تعذر فتح الملف، تأكد من وجود متصفح أو قارئ PDF')));
                       }
                     },
                     child: Container(
@@ -1552,7 +1583,6 @@ class _QuizPlayAreaState extends State<QuizPlayArea> {
                 bool hasExamPaper = metaDataList.isNotEmpty &&
                     metaDataList.first.containsKey('exam_paper_url') &&
                     metaDataList.first['exam_paper_url'] != null;
-
                 if (!hasExamPaper && !isTeacherGlobal) return const SizedBox();
 
                 return Container(
@@ -1588,12 +1618,16 @@ class _QuizPlayAreaState extends State<QuizPlayArea> {
                                 GestureDetector(
                                   onTap: () =>
                                       showFullScreenImage(context, url),
+                                  // ⚠️ تعديل لصور الاختبارات في الأوفلاين
                                   child: ClipRRect(
                                       borderRadius: BorderRadius.circular(10),
-                                      child: Image.network(url,
+                                      child: CachedNetworkImage(
+                                          imageUrl: url,
                                           height: 250,
                                           fit: BoxFit.cover,
-                                          errorBuilder: (c, e, s) => const Icon(
+                                          placeholder: (c, u) =>
+                                              const CircularProgressIndicator(),
+                                          errorWidget: (c, e, s) => const Icon(
                                               Icons.wifi_off,
                                               size: 50,
                                               color: Colors.red))),
@@ -1602,9 +1636,15 @@ class _QuizPlayAreaState extends State<QuizPlayArea> {
                               ElevatedButton.icon(
                                 onPressed: () async {
                                   if (isPdf) {
-                                    if (await canLaunchUrl(Uri.parse(url))) {
+                                    // ⚠️ فتح PDF للممتحن دائماً في المتصفح
+                                    try {
                                       await launchUrl(Uri.parse(url),
-                                          mode: LaunchMode.inAppWebView);
+                                          mode: LaunchMode.externalApplication);
+                                    } catch (e) {
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(const SnackBar(
+                                              content:
+                                                  Text('لا يمكن فتح الملف')));
                                     }
                                   } else {
                                     showFullScreenImage(context, url);
@@ -1661,7 +1701,6 @@ class _QuizPlayAreaState extends State<QuizPlayArea> {
                   return const Padding(
                       padding: EdgeInsets.all(20),
                       child: Text("لا توجد أسئلة تفاعلية بعد."));
-
                 return ListView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
