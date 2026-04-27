@@ -1,15 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:supabase_flutter/supabase_flutter.dart'
-    hide User; // إخفاء User لمنع التعارض مع Firebase
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:ui';
 import 'dart:io' show File;
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'firebase_options.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 // ==========================================
@@ -161,14 +156,36 @@ String currentUserNameGlobal = '';
 final supabase = Supabase.instance.client;
 
 // ==========================================
-// 2. دالة التشغيل الرئيسية
+// 2. دالة التكبير الخاصة بالصور (Zoom Feature)
+// ==========================================
+void showFullScreenImage(BuildContext context, String imageUrl) {
+  Navigator.push(
+      context,
+      MaterialPageRoute(
+          builder: (_) => Scaffold(
+                backgroundColor: Colors.black,
+                appBar: AppBar(
+                  backgroundColor: Colors.black,
+                  iconTheme: const IconThemeData(color: Colors.white),
+                  elevation: 0,
+                ),
+                body: Center(
+                  child: InteractiveViewer(
+                    panEnabled: true,
+                    minScale: 0.5,
+                    maxScale: 4.0, // نسبة التكبير القصوى
+                    child: Image.network(imageUrl, fit: BoxFit.contain),
+                  ),
+                ),
+              )));
+}
+
+// ==========================================
+// 3. دالة التشغيل الرئيسية
 // ==========================================
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   try {
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
     await Supabase.initialize(
       url: 'https://vlyikngandsoznwzqtgp.supabase.co',
       anonKey:
@@ -211,7 +228,7 @@ class JaafariGuideApp extends StatelessWidget {
 }
 
 // ==========================================
-// 3. نظام توجيه الدخول وتذكر الحساب
+// 4. نظام توجيه الدخول وتذكر الحساب
 // ==========================================
 class AuthWrapper extends StatefulWidget {
   const AuthWrapper({super.key});
@@ -225,17 +242,14 @@ class _AuthWrapperState extends State<AuthWrapper> {
     return StreamBuilder<AuthState>(
       stream: supabase.auth.onAuthStateChange,
       builder: (context, snapshot) {
-        final session = supabase.auth.currentSession;
-
-        if (session != null) {
-          return UserDataFetcher(uid: session.user.id);
-        }
-
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
               body: Center(child: CircularProgressIndicator()));
         }
-
+        final session = supabase.auth.currentSession;
+        if (session != null) {
+          return UserDataFetcher(uid: session.user.id);
+        }
         return const AppleGlassLoginScreen();
       },
     );
@@ -248,11 +262,8 @@ class UserDataFetcher extends StatelessWidget {
 
   Future<Map<String, dynamic>?> _fetchUserData() async {
     try {
-      final data =
-          await supabase.from('users').select().eq('id', uid).maybeSingle();
-      return data;
+      return await supabase.from('users').select().eq('id', uid).maybeSingle();
     } catch (e) {
-      debugPrint("Error fetching user data: $e");
       return null;
     }
   }
@@ -268,8 +279,6 @@ class UserDataFetcher extends StatelessWidget {
         }
 
         currentUserEmailGlobal = supabase.auth.currentUser?.email ?? '';
-
-        // --- تحديد الأستاذ (بناءً على طلبك) ---
         isTeacherGlobal = (currentUserEmailGlobal.toLowerCase() ==
             'bilal38jaafari@gmail.com');
 
@@ -292,7 +301,7 @@ class UserDataFetcher extends StatelessWidget {
 }
 
 // ==========================================
-// 4. واجهة تسجيل الدخول
+// 5. واجهة تسجيل الدخول الزجاجية
 // ==========================================
 class AppleGlassLoginScreen extends StatefulWidget {
   const AppleGlassLoginScreen({super.key});
@@ -330,11 +339,8 @@ class _AppleGlassLoginScreenState extends State<AppleGlassLoginScreen> {
           return;
         }
 
-        final AuthResponse res = await supabase.auth.signUp(
-          email: email,
-          password: pass,
-        );
-
+        final AuthResponse res =
+            await supabase.auth.signUp(email: email, password: pass);
         if (res.user != null) {
           await supabase.from('users').insert({
             'id': res.user!.id,
@@ -346,10 +352,7 @@ class _AppleGlassLoginScreenState extends State<AppleGlassLoginScreen> {
           });
         }
       } else {
-        await supabase.auth.signInWithPassword(
-          email: email,
-          password: pass,
-        );
+        await supabase.auth.signInWithPassword(email: email, password: pass);
       }
     } on AuthException catch (error) {
       _showError(error.message);
@@ -365,12 +368,14 @@ class _AppleGlassLoginScreenState extends State<AppleGlassLoginScreen> {
       body: Stack(
         children: [
           Container(
-              decoration: const BoxDecoration(
-                  gradient: LinearGradient(colors: [
-            Color(0xFF0F2027),
-            Color(0xFF203A43),
-            Color(0xFF2C5364)
-          ], begin: Alignment.topCenter, end: Alignment.bottomCenter))),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(colors: [
+                Color(0xFF0F2027),
+                Color(0xFF203A43),
+                Color(0xFF2C5364)
+              ], begin: Alignment.topCenter, end: Alignment.bottomCenter),
+            ),
+          ),
           Positioned(
               top: -50,
               left: -50,
@@ -507,7 +512,7 @@ class _AppleGlassLoginScreenState extends State<AppleGlassLoginScreen> {
 }
 
 // ==========================================
-// 5. التنقل الرئيسي وقائمة المواد
+// 6. التنقل الرئيسي وقائمة المواد
 // ==========================================
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
@@ -563,9 +568,6 @@ final List<SubjectData> appSubjects = [
   SubjectData("chemistry", "chemistry", Icons.science, Colors.cyan),
 ];
 
-// ==========================================
-// 6. واجهة الدروس (ديناميكية ومتزامنة 100%)
-// ==========================================
 class LessonsGridPage extends StatelessWidget {
   const LessonsGridPage({super.key});
   @override
@@ -591,26 +593,21 @@ class LessonsGridPage extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  "مرحباً بك،",
-                  style: TextStyle(
-                      fontSize: 18,
-                      color: Theme.of(context).colorScheme.primary),
-                ),
-                Text(
-                  currentUserNameGlobal,
-                  style: const TextStyle(
-                      fontSize: 26,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.2),
-                ),
+                Text("مرحباً بك،",
+                    style: TextStyle(
+                        fontSize: 18,
+                        color: Theme.of(context).colorScheme.primary)),
+                Text(currentUserNameGlobal,
+                    style: const TextStyle(
+                        fontSize: 26,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.2)),
                 const SizedBox(height: 5),
                 Text(
-                  isTeacherGlobal
-                      ? "ماذا تريد أن تُدرّس اليوم؟ 👨‍🏫"
-                      : "اختر مادة وابدأ التعلم 🚀",
-                  style: const TextStyle(fontSize: 14, color: Colors.grey),
-                ),
+                    isTeacherGlobal
+                        ? "ماذا تريد أن تُدرّس اليوم؟ 👨‍🏫"
+                        : "اختر مادة وابدأ التعلم 🚀",
+                    style: const TextStyle(fontSize: 14, color: Colors.grey)),
               ],
             ),
           ),
@@ -725,9 +722,8 @@ class _SubjectLessonsPageState extends State<SubjectLessonsPage> {
           int currentCount = 15;
           if (configSnap.hasData && configSnap.data!.isNotEmpty) {
             var data = configSnap.data!.first;
-            if (data.containsKey('lesson_count')) {
+            if (data.containsKey('lesson_count'))
               currentCount = data['lesson_count'];
-            }
           }
 
           return StreamBuilder<List<Map<String, dynamic>>>(
@@ -738,9 +734,8 @@ class _SubjectLessonsPageState extends State<SubjectLessonsPage> {
               Map<String, String> customTitles = {};
               if (snapshot.hasData) {
                 for (var row in snapshot.data!) {
-                  if (row.containsKey('custom_title')) {
+                  if (row.containsKey('custom_title'))
                     customTitles[row['id']] = row['custom_title'];
-                  }
                 }
               }
 
@@ -803,9 +798,8 @@ class _SubjectLessonsPageState extends State<SubjectLessonsPage> {
                               icon: const Icon(Icons.remove_circle,
                                   color: Colors.red, size: 35),
                               onPressed: () {
-                                if (currentCount > 1) {
+                                if (currentCount > 1)
                                   _updateCount(currentCount - 1);
-                                }
                               }),
                           Text("الدروس الحالية: $currentCount",
                               style: const TextStyle(
@@ -828,7 +822,7 @@ class _SubjectLessonsPageState extends State<SubjectLessonsPage> {
 }
 
 // ==========================================
-// 7. صفحة محتوى الدرس (مع الرفع والحذف الآمن)
+// 7. صفحة محتوى الدرس (مع التكبير و الـ PDF المدمج)
 // ==========================================
 class LessonContentPage extends StatefulWidget {
   final String lessonId;
@@ -847,12 +841,10 @@ class _LessonContentPageState extends State<LessonContentPage> {
   bool isUploading = false;
 
   Future<String?> _uploadFileToSupabase() async {
-    // دعم واضح وصريح لاختيار الـ PDF والصور
     FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['pdf', 'png', 'jpg', 'jpeg', 'mp4', 'doc', 'docx'],
         withData: true);
-
     if (result != null) {
       setState(() => isUploading = true);
       try {
@@ -862,11 +854,10 @@ class _LessonContentPageState extends State<LessonContentPage> {
 
         if (kIsWeb) {
           Uint8List? fileBytes = result.files.single.bytes;
-          if (fileBytes != null) {
+          if (fileBytes != null)
             await supabase.storage
                 .from('jaafari_storage')
                 .uploadBinary(storagePath, fileBytes);
-          }
         } else {
           if (result.files.single.path != null) {
             File file = File(result.files.single.path!);
@@ -969,7 +960,6 @@ class _LessonContentPageState extends State<LessonContentPage> {
     );
   }
 
-  // دالة الحذف الآمن (تم إصلاحها وإضافة رسالة تأكيد)
   void _deleteContent(dynamic docId) {
     showDialog(
       context: context,
@@ -1015,13 +1005,11 @@ class _LessonContentPageState extends State<LessonContentPage> {
             .eq('lessonId', widget.lessonId)
             .order('created_at', ascending: true),
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
+          if (snapshot.connectionState == ConnectionState.waiting)
             return const Center(child: CircularProgressIndicator());
-          }
-          if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          if (!snapshot.hasData || snapshot.data!.isEmpty)
             return const Center(
                 child: Text("لا يوجد محتوى", style: TextStyle(fontSize: 18)));
-          }
 
           var contents = snapshot.data!;
           return ListView.builder(
@@ -1041,15 +1029,19 @@ class _LessonContentPageState extends State<LessonContentPage> {
                 bool isPdf = data.toLowerCase().contains('.pdf');
 
                 if (isImage) {
-                  contentWidget = ClipRRect(
-                      borderRadius: BorderRadius.circular(15),
-                      child: Image.network(data, fit: BoxFit.cover));
+                  contentWidget = GestureDetector(
+                    onTap: () => showFullScreenImage(context, data),
+                    child: ClipRRect(
+                        borderRadius: BorderRadius.circular(15),
+                        child: Image.network(data, fit: BoxFit.cover)),
+                  );
                 } else {
                   contentWidget = InkWell(
                     onTap: () async {
                       if (await canLaunchUrl(Uri.parse(data))) {
                         await launchUrl(Uri.parse(data),
-                            mode: LaunchMode.externalApplication);
+                            mode:
+                                LaunchMode.inAppWebView); // فتح الـ PDF داخلياً
                       }
                     },
                     child: Container(
@@ -1116,7 +1108,7 @@ class _LessonContentPageState extends State<LessonContentPage> {
 }
 
 // ==========================================
-// 8. نظام الاختبارات الموحد (الأسئلة والامتحان)
+// 8. واجهة الاختبارات (مع التكبير المدمج)
 // ==========================================
 class QuizzesGridPage extends StatelessWidget {
   const QuizzesGridPage({super.key});
@@ -1213,9 +1205,8 @@ class _SubjectQuizzesListPageState extends State<SubjectQuizzesListPage> {
           int currentCount = 15;
           if (configSnap.hasData && configSnap.data!.isNotEmpty) {
             var data = configSnap.data!.first;
-            if (data.containsKey('quiz_count')) {
+            if (data.containsKey('quiz_count'))
               currentCount = data['quiz_count'];
-            }
           }
 
           return StreamBuilder<List<Map<String, dynamic>>>(
@@ -1226,9 +1217,8 @@ class _SubjectQuizzesListPageState extends State<SubjectQuizzesListPage> {
               Map<String, String> customTitles = {};
               if (snapshot.hasData) {
                 for (var row in snapshot.data!) {
-                  if (row.containsKey('custom_title')) {
+                  if (row.containsKey('custom_title'))
                     customTitles[row['id']] = row['custom_title'];
-                  }
                 }
               }
 
@@ -1281,9 +1271,8 @@ class _SubjectQuizzesListPageState extends State<SubjectQuizzesListPage> {
                               icon: const Icon(Icons.remove_circle,
                                   color: Colors.red, size: 35),
                               onPressed: () {
-                                if (currentCount > 1) {
+                                if (currentCount > 1)
                                   _updateQuizCount(currentCount - 1);
-                                }
                               }),
                           Text("الاختبارات الحالية: $currentCount",
                               style: const TextStyle(
@@ -1335,11 +1324,10 @@ class _QuizPlayAreaState extends State<QuizPlayArea> {
         String storagePath = 'quiz_papers/${widget.quizId}/$fileName';
         if (kIsWeb) {
           Uint8List? fileBytes = result.files.single.bytes;
-          if (fileBytes != null) {
+          if (fileBytes != null)
             await supabase.storage
                 .from('jaafari_storage')
                 .uploadBinary(storagePath, fileBytes);
-          }
         } else {
           if (result.files.single.path != null) {
             File file = File(result.files.single.path!);
@@ -1356,8 +1344,9 @@ class _QuizPlayAreaState extends State<QuizPlayArea> {
           'is_pdf': result.files.single.extension == 'pdf'
         });
       } catch (e) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text("خطأ في الرفع: $e")));
+        if (mounted)
+          ScaffoldMessenger.of(context)
+              .showSnackBar(SnackBar(content: Text("خطأ في الرفع: $e")));
       }
       setState(() => isUploadingExam = false);
     }
@@ -1428,7 +1417,7 @@ class _QuizPlayAreaState extends State<QuizPlayArea> {
     );
   }
 
-  void _deleteQuestion(dynamic docId) {
+  void _deleteQuestion(dynamic docId) async {
     showDialog(
       context: context,
       builder: (c) => AlertDialog(
@@ -1469,7 +1458,6 @@ class _QuizPlayAreaState extends State<QuizPlayArea> {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // ================== القسم 1: ورقة الامتحان ==================
             StreamBuilder<List<Map<String, dynamic>>>(
               stream: supabase
                   .from('quiz_metadata')
@@ -1479,10 +1467,7 @@ class _QuizPlayAreaState extends State<QuizPlayArea> {
                     metaSnap.data!.isNotEmpty &&
                     metaSnap.data!.first.containsKey('exam_paper_url') &&
                     metaSnap.data!.first['exam_paper_url'] != null;
-
-                if (!hasExamPaper && !isTeacherGlobal) {
-                  return const SizedBox();
-                }
+                if (!hasExamPaper && !isTeacherGlobal) return const SizedBox();
 
                 return Container(
                   width: double.infinity,
@@ -1514,22 +1499,32 @@ class _QuizPlayAreaState extends State<QuizPlayArea> {
                           return Column(
                             children: [
                               if (!isPdf)
-                                ClipRRect(
-                                    borderRadius: BorderRadius.circular(10),
-                                    child: Image.network(url,
-                                        height: 250, fit: BoxFit.cover)),
+                                GestureDetector(
+                                  onTap: () =>
+                                      showFullScreenImage(context, url),
+                                  child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(10),
+                                      child: Image.network(url,
+                                          height: 250, fit: BoxFit.cover)),
+                                ),
                               const SizedBox(height: 15),
                               ElevatedButton.icon(
                                 onPressed: () async {
-                                  if (await canLaunchUrl(Uri.parse(url))) {
-                                    await launchUrl(Uri.parse(url),
-                                        mode: LaunchMode.externalApplication);
+                                  if (isPdf) {
+                                    if (await canLaunchUrl(Uri.parse(url))) {
+                                      await launchUrl(Uri.parse(url),
+                                          mode: LaunchMode.inAppWebView);
+                                    }
+                                  } else {
+                                    showFullScreenImage(context, url);
                                   }
                                 },
-                                icon: const Icon(Icons.open_in_new),
+                                icon: Icon(isPdf
+                                    ? Icons.picture_as_pdf
+                                    : Icons.zoom_in),
                                 label: Text(isPdf
                                     ? "تحميل/فتح ملف الـ PDF"
-                                    : "تكبير الصورة"),
+                                    : "تكبير الصورة (Zoom)"),
                                 style: ElevatedButton.styleFrom(
                                     backgroundColor: widget.color,
                                     foregroundColor: Colors.white),
@@ -1543,18 +1538,14 @@ class _QuizPlayAreaState extends State<QuizPlayArea> {
                 );
               },
             ),
-
             const Divider(thickness: 2),
-
-            // ================== القسم 2: الأسئلة التفاعلية ==================
             Padding(
-              padding: const EdgeInsets.all(15),
-              child: Text("الأسئلة التفاعلية للاختبار:",
-                  style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey[700])),
-            ),
+                padding: const EdgeInsets.all(15),
+                child: Text("الأسئلة التفاعلية للاختبار:",
+                    style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey[700]))),
             StreamBuilder<List<Map<String, dynamic>>>(
               stream: supabase
                   .from('quiz_questions')
@@ -1562,15 +1553,13 @@ class _QuizPlayAreaState extends State<QuizPlayArea> {
                   .eq('quizId', widget.quizId)
                   .order('created_at', ascending: true),
               builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
+                if (snapshot.connectionState == ConnectionState.waiting)
                   return const CircularProgressIndicator();
-                }
                 var questions = snapshot.data ?? [];
-                if (questions.isEmpty) {
+                if (questions.isEmpty)
                   return const Padding(
                       padding: EdgeInsets.all(20),
                       child: Text("لا توجد أسئلة تفاعلية بعد."));
-                }
                 return ListView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
@@ -1606,16 +1595,15 @@ class _QuizPlayAreaState extends State<QuizPlayArea> {
                             ...List.generate(
                                 options.length,
                                 (i) => Padding(
-                                      padding: const EdgeInsets.only(bottom: 5),
-                                      child: Text("- ${options[i]}",
-                                          style: TextStyle(
-                                              color: i == qData['ans']
-                                                  ? Colors.green
-                                                  : Colors.black,
-                                              fontWeight: i == qData['ans']
-                                                  ? FontWeight.bold
-                                                  : FontWeight.normal)),
-                                    )),
+                                    padding: const EdgeInsets.only(bottom: 5),
+                                    child: Text("- ${options[i]}",
+                                        style: TextStyle(
+                                            color: i == qData['ans']
+                                                ? Colors.green
+                                                : Colors.black,
+                                            fontWeight: i == qData['ans']
+                                                ? FontWeight.bold
+                                                : FontWeight.normal)))),
                           ],
                         ),
                       ),
@@ -1657,7 +1645,7 @@ class _QuizPlayAreaState extends State<QuizPlayArea> {
 }
 
 // ==========================================
-// 9. حسابي والدعم
+// 9. صفحة الملف الشخصي والدعم
 // ==========================================
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
