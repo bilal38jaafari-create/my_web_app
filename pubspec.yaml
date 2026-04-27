@@ -31,5 +31,16 @@ flutter:
 flutter_launcher_icons:
   android: true
   ios: true
-  image_path: "assets/icon.png"
-  adaptive_icon_background: "#FFFFFF" # اختياري: لون خلفية للأيقونات في أندرويد الحديث
+  # هذا السطر يجعل الصورة تمسك الإطار بالكامل في أندرويد
+  image_path: "assets/icon.png" 
+  
+  # --- إعدادات أندرويد لملء المربع (adaptive icons) ---
+  # نستخدم الصورة نفسها كواجهة (Foreground)
+  adaptive_icon_foreground: "assets/icon.png"
+  # نستخدم لون خلفية سادة ليظهر خلف الصورة إذا لم تكن شفافة تماماً
+  # وإذا كانت صورتك تملأ المربع، فلن يظهر هذا اللون.
+  adaptive_icon_background: "#FFFFFF" # يمكنك تغييره للون صورتك المهيمن
+
+  # --- إعدادات iOS ---
+  # نلغي الشفافية لأن Apple ترفض الأيقونات الشفافة (ستتحول لأسود)
+  remove_alpha_ios: true
