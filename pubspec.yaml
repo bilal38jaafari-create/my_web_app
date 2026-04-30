@@ -9,38 +9,20 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  firebase_core: ^4.7.0
-  firebase_auth: ^6.4.0
-  cloud_firestore: ^6.3.0
-  supabase_flutter: ^2.3.4
+  supabase_flutter: ^2.4.0
   file_picker: ^8.0.0
-  url_launcher: ^6.2.1
   shared_preferences: ^2.2.2
   cached_network_image: ^3.3.1
+  path_provider: ^2.1.2
+  http: ^1.2.1
+  intl: ^0.19.0
+  url_launcher: ^6.2.5
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_launcher_icons: ^0.13.1
 
 flutter:
   uses-material-design: true
   assets:
-    - assets/logo.png  # تأكد أن هذا الاسم يطابق اسم ملفك في مجلد assets
-
-flutter_launcher_icons:
-  android: true
-  ios: true
-  # هذا السطر يجعل الصورة تمسك الإطار بالكامل في أندرويد
-  image_path: "assets/logo.png" 
-  
-  # --- إعدادات أندرويد لملء المربع (adaptive icons) ---
-  # نستخدم الصورة نفسها كواجهة (Foreground)
-  adaptive_icon_foreground: "assets/logo.png"
-  # نستخدم لون خلفية سادة ليظهر خلف الصورة إذا لم تكن شفافة تماماً
-  # وإذا كانت صورتك تملأ المربع، فلن يظهر هذا اللون.
-  adaptive_icon_background: "#FFFFFF" # يمكنك تغييره للون صورتك المهيمن
-
-  # --- إعدادات iOS ---
-  # نلغي الشفافية لأن Apple ترفض الأيقونات الشفافة (ستتحول لأسود)
-  remove_alpha_ios: true
+    - assets/logo.png

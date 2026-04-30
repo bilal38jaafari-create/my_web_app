@@ -1,6 +1,6 @@
 {
-    "name": "my_web_app",
-    "short_name": "my_web_app",
+    "name": "jaafari_guide",
+    "short_name": "jaafari_guide",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
