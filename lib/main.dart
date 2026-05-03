@@ -204,7 +204,7 @@ class S {
       'edit_title': 'Modifier le titre',
       'new_title': 'Nouveau titre',
       'dark_mode': 'Mode sombre',
-      'lang': 'Langue',
+      'lang': 'Langue de l\'application',
       'logout': 'Déconnexion',
       'support': 'Contacter le support (IG)',
       'math': 'Mathématiques',
@@ -262,7 +262,7 @@ final ValueNotifier<Locale> localeNotifier = ValueNotifier(const Locale('ar'));
 
 bool isTeacherGlobal = false;
 String currentUserEmailGlobal = '';
-String currentUserNameGlobal = ''; // الآن يحفظ الاسم فقط بدون أي إضافة لغوية
+String currentUserNameGlobal = '';
 final supabase = Supabase.instance.client;
 
 // ==========================================
@@ -772,7 +772,6 @@ class _LessonsGridPageState extends State<LessonsGridPage> {
     } catch (_) {}
   }
 
-  // ⚠️ تم إصلاح نافذة الحفظ بالكامل لتعمل بسلاسة ولا تعلق
   void _setExamConfig() {
     final titleCtrl = TextEditingController(text: examTitle);
     DateTime? tempDate = examDate;
@@ -859,7 +858,6 @@ class _LessonsGridPageState extends State<LessonsGridPage> {
 
   @override
   Widget build(BuildContext context) {
-    // تحديد الاسم المراد عرضه بناءً على اللغة والحساب
     String displayName = currentUserNameGlobal.isNotEmpty
         ? currentUserNameGlobal
         : (isTeacherGlobal ? S.get('teacher') : S.get('student'));
@@ -870,11 +868,9 @@ class _LessonsGridPageState extends State<LessonsGridPage> {
               style: const TextStyle(fontWeight: FontWeight.bold)),
           centerTitle: true,
           elevation: 0),
-      // ⚠️ وضعنا كل شيء داخل ListView ليصعد العداد للأعلى عند النزول كباقي المواد
       body: ListView(
         padding: EdgeInsets.zero,
         children: [
-          // ⚠️ البطاقة العصرية الجذابة للترحيب والعداد
           Container(
             margin:
                 const EdgeInsets.only(top: 15, left: 15, right: 15, bottom: 20),
@@ -936,7 +932,6 @@ class _LessonsGridPageState extends State<LessonsGridPage> {
               ],
             ),
           ),
-
           Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Text(S.get('subjects'),
@@ -944,11 +939,9 @@ class _LessonsGridPageState extends State<LessonsGridPage> {
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                       color: Colors.grey))),
-
           GridView.builder(
             shrinkWrap: true,
-            physics:
-                const NeverScrollableScrollPhysics(), // لمنع التعارض في النزول
+            physics: const NeverScrollableScrollPhysics(),
             padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
@@ -963,7 +956,6 @@ class _LessonsGridPageState extends State<LessonsGridPage> {
                       builder: (c) =>
                           SubjectLessonsPage(subject: appSubjects[i]))),
               child: Container(
-                // ⚠️ إرجاع الألوان الزاهية الخاصة بكل مادة للواجهة
                 decoration: BoxDecoration(
                     gradient: LinearGradient(colors: [
                       appSubjects[i].color,
@@ -1281,7 +1273,8 @@ class _LessonContentPageState extends State<LessonContentPage> {
   }
 
   Future<String?> _uploadSafeFile() async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles(
+    // ⚠️ إصلاح file_picker (حذف .platform) للتوافق مع النسخة 8.0.0
+    FilePickerResult? result = await FilePicker.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['pdf', 'png', 'jpg'],
         withData: true);
@@ -1574,7 +1567,8 @@ class _QuizPlayAreaState extends State<QuizPlayArea> {
   bool isUploading = false;
 
   Future<void> _uploadDocument(String fileType) async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles(
+    // ⚠️ إصلاح file_picker (حذف .platform)
+    FilePickerResult? result = await FilePicker.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['pdf', 'png', 'jpg'],
         withData: true);
@@ -2074,6 +2068,10 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    String displayName = currentUserNameGlobal.isNotEmpty
+        ? currentUserNameGlobal
+        : (isTeacherGlobal ? S.get('teacher') : S.get('student'));
+
     return Scaffold(
       appBar: AppBar(
           title: Text(S.get('profile'),
@@ -2100,12 +2098,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     backgroundColor: Colors.deepPurple,
                     child: Icon(Icons.person, size: 50, color: Colors.white)),
                 const SizedBox(height: 15),
-                Text(
-                    currentUserNameGlobal.isNotEmpty
-                        ? currentUserNameGlobal
-                        : (isTeacherGlobal
-                            ? S.get('teacher')
-                            : S.get('student')),
+                Text(displayName,
                     style: const TextStyle(
                         fontSize: 22, fontWeight: FontWeight.bold)),
                 Text(currentUserEmailGlobal,
