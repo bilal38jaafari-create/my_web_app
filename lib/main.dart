@@ -266,8 +266,28 @@ String currentUserNameGlobal = '';
 final supabase = Supabase.instance.client;
 
 // ==========================================
-// 3. عارض الصور والـ PDF المدمج (In-App & Offline)
+// 3. دوال مساعدة (عارض الصور والـ PDF والحذف السريع)
 // ==========================================
+
+// دالة الحذف السريع والفعال (تحذف فوراً وتظهر رسالة نجاح)
+Future<void> quickDelete(BuildContext context, String table, dynamic id) async {
+  try {
+    await supabase.from(table).delete().eq('id', id);
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('تم الحذف بنجاح ✔️',
+              style: TextStyle(fontWeight: FontWeight.bold)),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 2)));
+    }
+  } catch (e) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('خطأ في الحذف: $e'), backgroundColor: Colors.red));
+    }
+  }
+}
+
 void showFullScreenImage(BuildContext context, String imageUrl) {
   Navigator.push(
       context,
@@ -484,7 +504,7 @@ class UserDataFetcher extends StatelessWidget {
 }
 
 // ==========================================
-// 6. واجهة تسجيل الدخول (الأصلية)
+// 6. واجهة تسجيل الدخول
 // ==========================================
 class AppleGlassLoginScreen extends StatefulWidget {
   const AppleGlassLoginScreen({super.key});
@@ -504,37 +524,28 @@ class _AppleGlassLoginScreenState extends State<AppleGlassLoginScreen> {
       SnackBar(content: Text(msg), backgroundColor: Colors.redAccent));
 
   Future<void> _submit() async {
-    String email = _emailCtrl.text.trim();
-    String pass = _passCtrl.text.trim();
-    if (email.isEmpty || pass.isEmpty) {
-      _showError(S.get('fill_fields'));
-      return;
-    }
+    if (_emailCtrl.text.isEmpty || _passCtrl.text.isEmpty)
+      return _showError(S.get('fill_fields'));
     setState(() => isLoading = true);
-
     try {
       if (isRegistering) {
-        String confPass = _confirmPassCtrl.text.trim();
-        if (pass != confPass) {
-          _showError(S.get('pass_mismatch'));
-          setState(() => isLoading = false);
-          return;
-        }
-
-        final AuthResponse res =
-            await supabase.auth.signUp(email: email, password: pass);
+        if (_passCtrl.text != _confirmPassCtrl.text)
+          throw Exception(S.get('pass_mismatch'));
+        final res = await supabase.auth.signUp(
+            email: _emailCtrl.text.trim(), password: _passCtrl.text.trim());
         if (res.user != null) {
           await supabase.from('users').insert({
             'id': res.user!.id,
             'firstName': _firstNameCtrl.text.trim(),
             'lastName': _lastNameCtrl.text.trim(),
             'role': 'تلميذ',
-            'email': email,
+            'email': _emailCtrl.text.trim(),
             'createdAt': DateTime.now().toIso8601String(),
           });
         }
       } else {
-        await supabase.auth.signInWithPassword(email: email, password: pass);
+        await supabase.auth.signInWithPassword(
+            email: _emailCtrl.text.trim(), password: _passCtrl.text.trim());
       }
     } on AuthException catch (error) {
       _showError(error.message);
@@ -675,7 +686,7 @@ class _AppleGlassLoginScreenState extends State<AppleGlassLoginScreen> {
 }
 
 // ==========================================
-// 7. التنقل الرئيسي (التحديث الفوري للغة)
+// 7. التنقل الرئيسي
 // ==========================================
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
@@ -734,7 +745,7 @@ final List<SubjectData> appSubjects = [
 ];
 
 // ==========================================
-// 8. الرئيسية: الترحيب والعداد المتحرك (يختفي عند النزول)
+// 8. الرئيسية: الترحيب والعداد
 // ==========================================
 class LessonsGridPage extends StatefulWidget {
   const LessonsGridPage({super.key});
@@ -765,28 +776,31 @@ class _LessonsGridPageState extends State<LessonsGridPage> {
     super.dispose();
   }
 
-  // ⚠️ جلب التكوين من الجدول الصحيح والمُعدل
   Future<void> _fetchExamConfig() async {
     try {
-      final res = await supabase
+      final resConfig = await supabase
           .from('subject_config')
-          .select()
+          .select('lesson_count')
           .eq('id', 'national_exam_config')
           .maybeSingle();
-      if (mounted && res != null) {
+      final resMeta = await supabase
+          .from('lesson_metadata')
+          .select('custom_title')
+          .eq('id', 'national_exam_config')
+          .maybeSingle();
+
+      if (mounted) {
         setState(() {
-          examTitle = res['custom_title'] ?? "";
-          if (res['lesson_count'] != null) {
-            examDate = DateTime.fromMillisecondsSinceEpoch(res['lesson_count']);
-          }
+          if (resMeta != null && resMeta['custom_title'] != null)
+            examTitle = resMeta['custom_title'];
+          if (resConfig != null && resConfig['lesson_count'] != null)
+            examDate =
+                DateTime.fromMillisecondsSinceEpoch(resConfig['lesson_count']);
         });
       }
-    } catch (e) {
-      debugPrint("Error fetching exam: $e");
-    }
+    } catch (_) {}
   }
 
-  // ⚠️ نافذة الحفظ التي تعرض الأخطاء ولا تتجمد أبداً
   void _setExamConfig() {
     final titleCtrl = TextEditingController(text: examTitle);
     DateTime? tempDate = examDate;
@@ -844,18 +858,22 @@ class _LessonsGridPageState extends State<LessonsGridPage> {
                         if (tempDate != null) {
                           setDialogState(() => isSaving = true);
                           try {
-                            // ⚠️ الحفظ في نفس الجدول المخصص لتفادي الرفض من قاعدة البيانات
                             await supabase.from('subject_config').upsert({
                               'id': 'national_exam_config',
-                              'lesson_count': tempDate!.millisecondsSinceEpoch,
-                              'custom_title': titleCtrl.text.trim()
+                              'lesson_count': tempDate!.millisecondsSinceEpoch
+                            });
+                            await supabase.from('lesson_metadata').upsert({
+                              'id': 'national_exam_config',
+                              'subjectId': 'global',
+                              'custom_title': titleCtrl.text.isEmpty
+                                  ? S.get('exam_countdown')
+                                  : titleCtrl.text
                             });
 
                             _fetchExamConfig();
                             if (mounted) Navigator.pop(c);
                           } catch (e) {
                             setDialogState(() => isSaving = false);
-                            // إظهار سبب الخطأ للمستخدم
                             ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                                 content: Text(
                                     "لم يتم الحفظ، تأكد من إضافة عمود custom_title في Supabase: $e"),
@@ -893,7 +911,6 @@ class _LessonsGridPageState extends State<LessonsGridPage> {
       body: ListView(
         padding: EdgeInsets.zero,
         children: [
-          // ⚠️ البطاقة العصرية الجذابة
           Container(
             margin:
                 const EdgeInsets.only(top: 15, left: 15, right: 15, bottom: 20),
@@ -955,7 +972,6 @@ class _LessonsGridPageState extends State<LessonsGridPage> {
               ],
             ),
           ),
-
           Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Text(S.get('subjects'),
@@ -963,7 +979,6 @@ class _LessonsGridPageState extends State<LessonsGridPage> {
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                       color: Colors.grey))),
-
           GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
@@ -1015,7 +1030,6 @@ class _LessonsGridPageState extends State<LessonsGridPage> {
     );
   }
 
-  // ⚠️ تصميم المربعات العصرية
   Widget _timeBox(String value, String label) {
     return Column(
       children: [
@@ -1051,7 +1065,7 @@ class _LessonsGridPageState extends State<LessonsGridPage> {
 }
 
 // ==========================================
-// 9. الدروس وميزة خطة الدراسة الذكية (الاجتهاد)
+// 9. الدروس وميزة الخطة الذكية
 // ==========================================
 class SubjectLessonsPage extends StatefulWidget {
   final SubjectData subject;
@@ -1268,7 +1282,7 @@ class _SubjectLessonsPageState extends State<SubjectLessonsPage> {
 }
 
 // ==========================================
-// 10. محتوى الدرس + زر الإكمال للتلميذ
+// 10. محتوى الدرس + الحذف السريع
 // ==========================================
 class LessonContentPage extends StatefulWidget {
   final String lessonId, title, subjectId;
@@ -1425,16 +1439,15 @@ class _LessonContentPageState extends State<LessonContentPage> {
                                   width: double.infinity,
                                   padding: const EdgeInsets.all(10),
                                   child: contentUI),
+                              // ⚠️ استخدام ميزة الحذف السريع والفعال هنا
                               Positioned(
                                   top: 0,
                                   left: 0,
                                   child: IconButton(
                                       icon: const Icon(Icons.delete,
                                           color: Colors.red),
-                                      onPressed: () => supabase
-                                          .from('lesson_contents')
-                                          .delete()
-                                          .eq('id', block['id'])))
+                                      onPressed: () => quickDelete(context,
+                                          'lesson_contents', block['id'])))
                             ])
                           : contentUI,
                     );
@@ -1488,7 +1501,7 @@ class _LessonContentPageState extends State<LessonContentPage> {
 }
 
 // ==========================================
-// 11. واجهة الاختبارات المقسمة (امتحان، تصحيح، QCM)
+// 11. واجهة الاختبارات المقسمة (أزرار زيادة العدد، وحذف سريع)
 // ==========================================
 class QuizzesGridPage extends StatelessWidget {
   const QuizzesGridPage({super.key});
@@ -1530,6 +1543,7 @@ class QuizzesGridPage extends StatelessWidget {
   }
 }
 
+// ⚠️ تمت إضافة شريط التحكم بزيادة وتقليل الاختبارات للأستاذ هنا
 class SubjectQuizzesListPage extends StatelessWidget {
   final SubjectData subject;
   const SubjectQuizzesListPage({super.key, required this.subject});
@@ -1549,35 +1563,75 @@ class SubjectQuizzesListPage extends StatelessWidget {
           int currentCount = configSnap.hasData && configSnap.data!.isNotEmpty
               ? configSnap.data!.first['quiz_count'] ?? 10
               : 10;
-          return ListView.builder(
-            padding: const EdgeInsets.all(15),
-            itemCount: currentCount,
-            itemBuilder: (ctx, i) {
-              String quizId = "${subject.id}_quiz_${i + 1}";
-              String displayTitle = "اختبار ${i + 1}";
-              return Card(
-                elevation: 0,
-                margin: const EdgeInsets.only(bottom: 12),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(15),
-                    side: BorderSide(color: subject.color.withOpacity(0.3))),
-                child: ListTile(
-                  leading: const Icon(Icons.assignment,
-                      color: Colors.orange, size: 30),
-                  title: Text(displayTitle,
-                      style: const TextStyle(fontWeight: FontWeight.bold)),
-                  trailing: const Icon(Icons.play_circle_fill,
-                      color: Colors.green, size: 35),
-                  onTap: () => Navigator.push(
-                      ctx,
-                      MaterialPageRoute(
-                          builder: (_) => QuizPlayArea(
-                              quizId: quizId,
-                              color: subject.color,
-                              title: displayTitle))),
+          return Column(
+            children: [
+              Expanded(
+                child: ListView.builder(
+                  padding: const EdgeInsets.all(15),
+                  itemCount: currentCount,
+                  itemBuilder: (ctx, i) {
+                    String quizId = "${subject.id}_quiz_${i + 1}";
+                    String displayTitle = "اختبار ${i + 1}";
+                    return Card(
+                      elevation: 0,
+                      margin: const EdgeInsets.only(bottom: 12),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15),
+                          side: BorderSide(
+                              color: subject.color.withOpacity(0.3))),
+                      child: ListTile(
+                        leading: const Icon(Icons.assignment,
+                            color: Colors.orange, size: 30),
+                        title: Text(displayTitle,
+                            style:
+                                const TextStyle(fontWeight: FontWeight.bold)),
+                        trailing: const Icon(Icons.play_circle_fill,
+                            color: Colors.green, size: 35),
+                        onTap: () => Navigator.push(
+                            ctx,
+                            MaterialPageRoute(
+                                builder: (_) => QuizPlayArea(
+                                    quizId: quizId,
+                                    color: subject.color,
+                                    title: displayTitle))),
+                      ),
+                    );
+                  },
                 ),
-              );
-            },
+              ),
+              // ⚠️ شريط التحكم المخصص للأستاذ لزيادة وتقليل الاختبارات
+              if (isTeacherGlobal)
+                Container(
+                  color: Colors.white,
+                  padding: const EdgeInsets.all(10),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      IconButton(
+                          icon: const Icon(Icons.remove_circle,
+                              color: Colors.red, size: 35),
+                          onPressed: () =>
+                              supabase.from('subject_config').upsert({
+                                'id': "${subject.id}_quiz",
+                                'quiz_count':
+                                    currentCount > 1 ? currentCount - 1 : 1
+                              })),
+                      Text("عدد الاختبارات: $currentCount",
+                          style: const TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 18)),
+                      IconButton(
+                          icon: const Icon(Icons.add_circle,
+                              color: Colors.green, size: 35),
+                          onPressed: () => supabase
+                                  .from('subject_config')
+                                  .upsert({
+                                'id': "${subject.id}_quiz",
+                                'quiz_count': currentCount + 1
+                              })),
+                    ],
+                  ),
+                )
+            ],
           );
         },
       ),
@@ -1723,13 +1777,12 @@ class _QuizPlayAreaState extends State<QuizPlayArea> {
                     color: isPdf ? Colors.red : Colors.blue, size: 40),
                 title: Text(isPdf ? "ملف PDF" : "صورة",
                     style: const TextStyle(fontWeight: FontWeight.bold)),
+                // ⚠️ استخدام دالة الحذف السريع لملفات الاختبار أيضاً
                 trailing: isTeacherGlobal
                     ? IconButton(
                         icon: const Icon(Icons.delete, color: Colors.red),
-                        onPressed: () => supabase
-                            .from('lesson_contents')
-                            .delete()
-                            .eq('id', files[i]['id']))
+                        onPressed: () => quickDelete(
+                            context, 'lesson_contents', files[i]['id']))
                     : null,
                 onTap: () {
                   if (isPdf)
@@ -1831,14 +1884,13 @@ class _QuizPlayAreaState extends State<QuizPlayArea> {
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
                     itemCount: snapshot.data!.length,
+                    // ⚠️ استخدام دالة الحذف السريع لأسئلة الـ QCM
                     itemBuilder: (ctx, i) => ListTile(
                         title: Text(snapshot.data![i]['q']),
                         trailing: IconButton(
                             icon: const Icon(Icons.delete, color: Colors.red),
-                            onPressed: () => supabase
-                                .from('quiz_questions')
-                                .delete()
-                                .eq('id', snapshot.data![i]['id']))),
+                            onPressed: () => quickDelete(context,
+                                'quiz_questions', snapshot.data![i]['id']))),
                   );
                 },
               )
@@ -2083,7 +2135,7 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   void _changeLanguage(String code) {
-    localeNotifier.value = Locale(code); // التغيير يحدث فوراً في كل الشاشات
+    localeNotifier.value = Locale(code); // التغيير يحدث فوراً
     prefs.setString('app_lang', code);
   }
 
