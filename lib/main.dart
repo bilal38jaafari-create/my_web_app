@@ -469,7 +469,6 @@ class UserDataFetcher extends StatelessWidget {
         isTeacherGlobal = (currentUserEmailGlobal.toLowerCase() ==
             'bilal38jaafari@gmail.com');
 
-        // نحفظ الاسم الصافي فقط من قاعدة البيانات
         currentUserNameGlobal = "";
         if (snapshot.hasData && snapshot.data != null) {
           var data = snapshot.data!;
@@ -485,7 +484,7 @@ class UserDataFetcher extends StatelessWidget {
 }
 
 // ==========================================
-// 6. واجهة تسجيل الدخول
+// 6. واجهة تسجيل الدخول (الأصلية)
 // ==========================================
 class AppleGlassLoginScreen extends StatefulWidget {
   const AppleGlassLoginScreen({super.key});
@@ -505,28 +504,40 @@ class _AppleGlassLoginScreenState extends State<AppleGlassLoginScreen> {
       SnackBar(content: Text(msg), backgroundColor: Colors.redAccent));
 
   Future<void> _submit() async {
-    if (_emailCtrl.text.isEmpty || _passCtrl.text.isEmpty)
-      return _showError(S.get('fill_fields'));
+    String email = _emailCtrl.text.trim();
+    String pass = _passCtrl.text.trim();
+    if (email.isEmpty || pass.isEmpty) {
+      _showError(S.get('fill_fields'));
+      return;
+    }
     setState(() => isLoading = true);
+
     try {
       if (isRegistering) {
-        if (_passCtrl.text != _confirmPassCtrl.text)
-          throw Exception(S.get('pass_mismatch'));
-        final res = await supabase.auth.signUp(
-            email: _emailCtrl.text.trim(), password: _passCtrl.text.trim());
+        String confPass = _confirmPassCtrl.text.trim();
+        if (pass != confPass) {
+          _showError(S.get('pass_mismatch'));
+          setState(() => isLoading = false);
+          return;
+        }
+
+        final AuthResponse res =
+            await supabase.auth.signUp(email: email, password: pass);
         if (res.user != null) {
           await supabase.from('users').insert({
             'id': res.user!.id,
             'firstName': _firstNameCtrl.text.trim(),
             'lastName': _lastNameCtrl.text.trim(),
-            'email': _emailCtrl.text.trim(),
+            'role': 'تلميذ',
+            'email': email,
             'createdAt': DateTime.now().toIso8601String(),
           });
         }
       } else {
-        await supabase.auth.signInWithPassword(
-            email: _emailCtrl.text.trim(), password: _passCtrl.text.trim());
+        await supabase.auth.signInWithPassword(email: email, password: pass);
       }
+    } on AuthException catch (error) {
+      _showError(error.message);
     } catch (e) {
       _showError(S.get('auth_error'));
     }
@@ -754,6 +765,7 @@ class _LessonsGridPageState extends State<LessonsGridPage> {
     super.dispose();
   }
 
+  // ⚠️ جلب التكوين من الجدول الصحيح والمُعدل
   Future<void> _fetchExamConfig() async {
     try {
       final res = await supabase
@@ -761,7 +773,7 @@ class _LessonsGridPageState extends State<LessonsGridPage> {
           .select()
           .eq('id', 'national_exam_config')
           .maybeSingle();
-      if (res != null) {
+      if (mounted && res != null) {
         setState(() {
           examTitle = res['custom_title'] ?? "";
           if (res['lesson_count'] != null) {
@@ -769,9 +781,12 @@ class _LessonsGridPageState extends State<LessonsGridPage> {
           }
         });
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint("Error fetching exam: $e");
+    }
   }
 
+  // ⚠️ نافذة الحفظ التي تعرض الأخطاء ولا تتجمد أبداً
   void _setExamConfig() {
     final titleCtrl = TextEditingController(text: examTitle);
     DateTime? tempDate = examDate;
@@ -829,15 +844,22 @@ class _LessonsGridPageState extends State<LessonsGridPage> {
                         if (tempDate != null) {
                           setDialogState(() => isSaving = true);
                           try {
+                            // ⚠️ الحفظ في نفس الجدول المخصص لتفادي الرفض من قاعدة البيانات
                             await supabase.from('subject_config').upsert({
                               'id': 'national_exam_config',
-                              'custom_title': titleCtrl.text,
-                              'lesson_count': tempDate!.millisecondsSinceEpoch
+                              'lesson_count': tempDate!.millisecondsSinceEpoch,
+                              'custom_title': titleCtrl.text.trim()
                             });
+
                             _fetchExamConfig();
                             if (mounted) Navigator.pop(c);
                           } catch (e) {
                             setDialogState(() => isSaving = false);
+                            // إظهار سبب الخطأ للمستخدم
+                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                                content: Text(
+                                    "لم يتم الحفظ، تأكد من إضافة عمود custom_title في Supabase: $e"),
+                                backgroundColor: Colors.red));
                           }
                         }
                       },
@@ -871,19 +893,20 @@ class _LessonsGridPageState extends State<LessonsGridPage> {
       body: ListView(
         padding: EdgeInsets.zero,
         children: [
+          // ⚠️ البطاقة العصرية الجذابة
           Container(
             margin:
                 const EdgeInsets.only(top: 15, left: 15, right: 15, bottom: 20),
             padding: const EdgeInsets.all(25),
             decoration: BoxDecoration(
                 gradient: const LinearGradient(
-                    colors: [Color(0xFF6A11CB), Color(0xFF2575FC)],
+                    colors: [Color(0xFF2B5876), Color(0xFF4E4376)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight),
                 borderRadius: BorderRadius.circular(30),
                 boxShadow: [
                   BoxShadow(
-                      color: const Color(0xFF2575FC).withOpacity(0.4),
+                      color: const Color(0xFF4E4376).withOpacity(0.4),
                       blurRadius: 20,
                       offset: const Offset(0, 10))
                 ]),
@@ -896,7 +919,7 @@ class _LessonsGridPageState extends State<LessonsGridPage> {
                     Expanded(
                         child: Text("${S.get('welcome')} $displayName 👋",
                             style: const TextStyle(
-                                fontSize: 24,
+                                fontSize: 22,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.white))),
                     if (isTeacherGlobal)
@@ -932,6 +955,7 @@ class _LessonsGridPageState extends State<LessonsGridPage> {
               ],
             ),
           ),
+
           Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Text(S.get('subjects'),
@@ -939,6 +963,7 @@ class _LessonsGridPageState extends State<LessonsGridPage> {
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                       color: Colors.grey))),
+
           GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
@@ -990,24 +1015,36 @@ class _LessonsGridPageState extends State<LessonsGridPage> {
     );
   }
 
+  // ⚠️ تصميم المربعات العصرية
   Widget _timeBox(String value, String label) {
     return Column(
       children: [
         Container(
-            padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
             decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.3),
+                color: Colors.white.withOpacity(0.2),
                 borderRadius: BorderRadius.circular(15),
-                border: Border.all(color: Colors.white.withOpacity(0.2))),
+                border: Border.all(
+                    color: Colors.white.withOpacity(0.5), width: 1.5),
+                boxShadow: const [
+                  BoxShadow(
+                      color: Colors.black12,
+                      blurRadius: 8,
+                      offset: Offset(0, 4))
+                ]),
             child: Text(value.padLeft(2, '0'),
                 style: const TextStyle(
-                    fontSize: 24,
+                    fontSize: 26,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white))),
+                    color: Colors.white,
+                    letterSpacing: 1.5))),
         const SizedBox(height: 8),
         Text(label,
             style: const TextStyle(
-                color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold))
+                color: Colors.white,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                shadows: [Shadow(color: Colors.black45, blurRadius: 2)]))
       ],
     );
   }
@@ -1273,7 +1310,6 @@ class _LessonContentPageState extends State<LessonContentPage> {
   }
 
   Future<String?> _uploadSafeFile() async {
-    // ⚠️ إصلاح file_picker (حذف .platform) للتوافق مع النسخة 8.0.0
     FilePickerResult? result = await FilePicker.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['pdf', 'png', 'jpg'],
@@ -1549,7 +1585,6 @@ class SubjectQuizzesListPage extends StatelessWidget {
   }
 }
 
-// واحة التحكم في الاختبار
 class QuizPlayArea extends StatefulWidget {
   final String quizId;
   final Color color;
@@ -1567,7 +1602,6 @@ class _QuizPlayAreaState extends State<QuizPlayArea> {
   bool isUploading = false;
 
   Future<void> _uploadDocument(String fileType) async {
-    // ⚠️ إصلاح file_picker (حذف .platform)
     FilePickerResult? result = await FilePicker.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['pdf', 'png', 'jpg'],
@@ -1844,7 +1878,6 @@ class _QuizPlayAreaState extends State<QuizPlayArea> {
   }
 }
 
-// الشاشة التفاعلية للـ QCM
 class InteractiveQuizScreen extends StatefulWidget {
   final String quizId;
   final String title;
@@ -2050,7 +2083,7 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   void _changeLanguage(String code) {
-    localeNotifier.value = Locale(code); // التغيير يحدث فوراً
+    localeNotifier.value = Locale(code); // التغيير يحدث فوراً في كل الشاشات
     prefs.setString('app_lang', code);
   }
 
