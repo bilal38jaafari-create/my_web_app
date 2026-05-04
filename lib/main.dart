@@ -27,15 +27,19 @@ class CacheManager {
   static List<Map<String, dynamic>> load(String key) {
     final String? cachedStr = prefs.getString(key);
     if (cachedStr != null) {
-      List<dynamic> decoded = jsonDecode(cachedStr);
-      return decoded.map((e) => e as Map<String, dynamic>).toList();
+      try {
+        List<dynamic> decoded = jsonDecode(cachedStr);
+        return decoded.map((e) => e as Map<String, dynamic>).toList();
+      } catch (e) {
+        return [];
+      }
     }
     return [];
   }
 }
 
 // ==========================================
-// 2. نظام الترجمة الشامل (عربية، إنجليزية، فرنسية)
+// 2. القاموس الشامل (ترجمة 100% فورية)
 // ==========================================
 class S {
   static const Map<String, Map<String, String>> _data = {
@@ -78,11 +82,11 @@ class S {
       'save': 'حفظ',
       'cancel': 'إلغاء',
       'delete': 'حذف',
-      'offline_msg': 'أنت الآن تتصفح بدون إنترنت.',
+      'offline_msg': 'أنت الآن تتصفح بدون إنترنت. (البيانات محفوظة)',
       'welcome': 'مرحباً',
       'student': 'تلميذنا الطموح',
-      'teacher': 'الأستاذ بلال',
-      'exam_countdown': 'العد التنازلي للامتحان الوطني:',
+      'teacher': 'الأستاذ بلال الجعفري',
+      'exam_countdown': 'الامتحان الوطني',
       'days': 'أيام',
       'hours': 'ساعات',
       'minutes': 'دقائق',
@@ -101,7 +105,7 @@ class S {
       'add_exam': 'إرفاق امتحان',
       'add_correction': 'إرفاق تصحيح',
       'add_q': 'إضافة سؤال',
-      'q_text': 'السؤال',
+      'q_text': 'نص السؤال',
       'correct_opt': 'الجواب الصحيح (1-4)',
       'score_is': 'نتيجتك هي:',
       'review_mistakes': 'مراجعة الأخطاء:',
@@ -109,6 +113,26 @@ class S {
       'your_ans': 'إجابتك:',
       'next_q': 'السؤال التالي',
       'finish_q': 'إنهاء وتسليم',
+      'success_del': 'تم الحذف بنجاح ✔️',
+      'error_del': 'تعذر الحذف',
+      'open_pdf': 'فتح ملف الـ PDF',
+      'open_img': 'تكبير الصورة',
+      'no_files': 'لا توجد ملفات مرفقة حالياً.',
+      'no_qcm': 'لا توجد أسئلة تفاعلية بعد.',
+      'opt1': 'الخيار 1',
+      'opt2': 'الخيار 2',
+      'opt3': 'الخيار 3',
+      'opt4': 'الخيار 4',
+      'quiz_title': 'اختبار',
+      'exam_setup': 'إعداد الامتحان الوطني',
+      'exam_title': 'عنوان الامتحان',
+      'choose_date': 'اختر التاريخ',
+      'lesson_count': 'عدد الدروس:',
+      'quiz_count': 'عدد الاختبارات:',
+      'uploading': 'جاري الرفع...',
+      'success_upload': 'تم الرفع بنجاح',
+      'ig_error': 'لا يمكن فتح تطبيق إنستغرام',
+      'no_ans': 'لم تجب',
     },
     'en': {
       'app_title': 'Jaafari Guide',
@@ -133,7 +157,7 @@ class S {
       'edit_title': 'Edit Title',
       'new_title': 'New Title',
       'dark_mode': 'Dark Mode',
-      'lang': 'App Language',
+      'lang': 'Language',
       'logout': 'Logout',
       'support': 'Contact Support (IG)',
       'math': 'Mathematics',
@@ -149,26 +173,26 @@ class S {
       'save': 'Save',
       'cancel': 'Cancel',
       'delete': 'Delete',
-      'offline_msg': 'You are offline.',
+      'offline_msg': 'You are offline (Cached data).',
       'welcome': 'Welcome',
       'student': 'Ambitious Student',
-      'teacher': 'Mr. Bilal',
-      'exam_countdown': 'National Exam Countdown:',
+      'teacher': 'Mr. Bilal Jaafari',
+      'exam_countdown': 'National Exam Countdown',
       'days': 'Days',
       'hours': 'Hours',
       'minutes': 'Mins',
       'seconds': 'Secs',
       'not_set': 'Exam date not set yet.',
-      'set_plan': 'Set Subject Plan (Target Date)',
+      'set_plan': 'Set Subject Plan',
       'plan_goal': 'Study Plan:',
-      'daily_plan': 'lessons/day to finish on time 🚀',
+      'daily_plan': 'lessons/day to finish 🚀',
       'completed': '✔️ Completed',
       'mark_done': 'Complete Lesson',
       'mark_undone': 'Mark Incomplete',
       'exam_files': 'Exam Papers',
       'correction_files': 'Correction Papers',
       'qcm_section': 'Interactive Quiz (MCQ)',
-      'start_quiz': 'Start Interactive Quiz',
+      'start_quiz': 'Start Quiz',
       'add_exam': 'Attach Exam',
       'add_correction': 'Attach Correction',
       'add_q': 'Add Question',
@@ -180,6 +204,26 @@ class S {
       'your_ans': 'Your Answer:',
       'next_q': 'Next Question',
       'finish_q': 'Finish & Submit',
+      'success_del': 'Deleted successfully ✔️',
+      'error_del': 'Failed to delete',
+      'open_pdf': 'Open PDF',
+      'open_img': 'View Image',
+      'no_files': 'No files attached.',
+      'no_qcm': 'No interactive questions.',
+      'opt1': 'Option 1',
+      'opt2': 'Option 2',
+      'opt3': 'Option 3',
+      'opt4': 'Option 4',
+      'quiz_title': 'Quiz',
+      'exam_setup': 'National Exam Setup',
+      'exam_title': 'Exam Title',
+      'choose_date': 'Choose Date',
+      'lesson_count': 'Lessons Count:',
+      'quiz_count': 'Quizzes Count:',
+      'uploading': 'Uploading...',
+      'success_upload': 'Uploaded successfully',
+      'ig_error': 'Cannot open Instagram',
+      'no_ans': 'No answer',
     },
     'fr': {
       'app_title': 'Jaafari Guide',
@@ -204,7 +248,7 @@ class S {
       'edit_title': 'Modifier le titre',
       'new_title': 'Nouveau titre',
       'dark_mode': 'Mode sombre',
-      'lang': 'Langue de l\'application',
+      'lang': 'Langue',
       'logout': 'Déconnexion',
       'support': 'Contacter le support (IG)',
       'math': 'Mathématiques',
@@ -220,11 +264,11 @@ class S {
       'save': 'Enregistrer',
       'cancel': 'Annuler',
       'delete': 'Supprimer',
-      'offline_msg': 'Vous êtes hors ligne.',
+      'offline_msg': 'Vous êtes hors ligne (Données en cache).',
       'welcome': 'Bienvenue',
       'student': 'Élève Ambitieux',
-      'teacher': 'M. Bilal',
-      'exam_countdown': 'Compte à rebours de l\'examen:',
+      'teacher': 'M. Bilal Jaafari',
+      'exam_countdown': 'Examen National',
       'days': 'Jours',
       'hours': 'Heures',
       'minutes': 'Mins',
@@ -251,6 +295,26 @@ class S {
       'your_ans': 'Votre réponse:',
       'next_q': 'Question Suivante',
       'finish_q': 'Terminer',
+      'success_del': 'Supprimé avec succès ✔️',
+      'error_del': 'Échec de la suppression',
+      'open_pdf': 'Ouvrir le PDF',
+      'open_img': 'Agrandir l\'image',
+      'no_files': 'Aucun fichier joint.',
+      'no_qcm': 'Aucune question interactive.',
+      'opt1': 'Option 1',
+      'opt2': 'Option 2',
+      'opt3': 'Option 3',
+      'opt4': 'Option 4',
+      'quiz_title': 'Quiz',
+      'exam_setup': 'Configuration de l\'examen',
+      'exam_title': 'Titre de l\'examen',
+      'choose_date': 'Choisir la date',
+      'lesson_count': 'Nombre de leçons:',
+      'quiz_count': 'Nombre de quiz:',
+      'uploading': 'Téléchargement...',
+      'success_upload': 'Téléchargé avec succès',
+      'ig_error': 'Impossible d\'ouvrir Instagram',
+      'no_ans': 'Aucune réponse',
     }
   };
   static String get(String key) =>
@@ -269,21 +333,21 @@ final supabase = Supabase.instance.client;
 // 3. دوال مساعدة (عارض الصور والـ PDF والحذف السريع)
 // ==========================================
 
-// دالة الحذف السريع والفعال (تحذف فوراً وتظهر رسالة نجاح)
 Future<void> quickDelete(BuildContext context, String table, dynamic id) async {
   try {
     await supabase.from(table).delete().eq('id', id);
     if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('تم الحذف بنجاح ✔️',
-              style: TextStyle(fontWeight: FontWeight.bold)),
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(S.get('success_del'),
+              style: const TextStyle(fontWeight: FontWeight.bold)),
           backgroundColor: Colors.green,
-          duration: Duration(seconds: 2)));
+          duration: const Duration(seconds: 2)));
     }
   } catch (e) {
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('خطأ في الحذف: $e'), backgroundColor: Colors.red));
+          content: Text('${S.get('error_del')}: $e'),
+          backgroundColor: Colors.red));
     }
   }
 }
@@ -318,6 +382,7 @@ void showFullScreenImage(BuildContext context, String imageUrl) {
               )));
 }
 
+// ⚠️ الحل العبقري لمشكلة الشاشة البيضاء (التفريق بين الويب وتطبيق الهاتف)
 class InAppPdfViewer extends StatefulWidget {
   final String pdfUrl;
   final String title;
@@ -334,27 +399,28 @@ class InAppPdfViewer extends StatefulWidget {
 }
 
 class _InAppPdfViewerState extends State<InAppPdfViewer> {
-  File? offlinePdf;
+  Uint8List? pdfBytes;
   bool isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadPdf();
+    if (!kIsWeb) {
+      _loadPdfMobile(); // الهاتف يحمل البيانات ليعمل بدون إنترنت
+    } else {
+      isLoading = false; // الويب لا يحتاج تحميل، سنعرض له زر الفتح فوراً
+    }
   }
 
-  void _loadPdf() async {
-    if (kIsWeb) {
-      setState(() => isLoading = false);
-      return;
-    }
+  void _loadPdfMobile() async {
     try {
       final fileInfo =
           await DefaultCacheManager().getFileFromCache(widget.pdfUrl);
       if (fileInfo != null) {
-        offlinePdf = fileInfo.file;
+        pdfBytes = await fileInfo.file.readAsBytes();
       } else {
-        offlinePdf = await DefaultCacheManager().getSingleFile(widget.pdfUrl);
+        File file = await DefaultCacheManager().getSingleFile(widget.pdfUrl);
+        pdfBytes = await file.readAsBytes();
       }
     } catch (e) {
       debugPrint("PDF Offline Error: $e");
@@ -366,14 +432,61 @@ class _InAppPdfViewerState extends State<InAppPdfViewer> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-          title: Text(widget.title),
-          backgroundColor: widget.color,
-          foregroundColor: Colors.white),
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : (kIsWeb || offlinePdf == null)
-              ? SfPdfViewer.network(widget.pdfUrl)
-              : SfPdfViewer.file(offlinePdf!),
+        title: Text(widget.title),
+        backgroundColor: widget.color,
+        foregroundColor: Colors.white,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.download),
+            onPressed: () => launchUrl(Uri.parse(widget.pdfUrl),
+                mode: LaunchMode.externalApplication),
+          )
+        ],
+      ),
+      // ⚠️ في الويب نظهر زر الفتح المباشر، وفي الهاتف نعرض الملف داخلياً
+      body: kIsWeb ? _buildWebFallback() : _buildMobileViewer(),
+    );
+  }
+
+  Widget _buildMobileViewer() {
+    if (isLoading) return const Center(child: CircularProgressIndicator());
+    if (pdfBytes != null) return SfPdfViewer.memory(pdfBytes!);
+    return _buildWebFallback();
+  }
+
+  Widget _buildWebFallback() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.picture_as_pdf,
+                size: 100, color: widget.color.withOpacity(0.7)),
+            const SizedBox(height: 20),
+            const Text(
+              "لعرض هذا الملف في متصفح الويب، يرجى فتحه أو تحميله مباشرة 📥",
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 30),
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: widget.color,
+                  foregroundColor: Colors.white,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15))),
+              icon: const Icon(Icons.open_in_new, size: 28),
+              label: const Text("فتح / تحميل الملف",
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+              onPressed: () => launchUrl(Uri.parse(widget.pdfUrl),
+                  mode: LaunchMode.externalApplication),
+            )
+          ],
+        ),
+      ),
     );
   }
 }
@@ -547,8 +660,6 @@ class _AppleGlassLoginScreenState extends State<AppleGlassLoginScreen> {
         await supabase.auth.signInWithPassword(
             email: _emailCtrl.text.trim(), password: _passCtrl.text.trim());
       }
-    } on AuthException catch (error) {
-      _showError(error.message);
     } catch (e) {
       _showError(S.get('auth_error'));
     }
@@ -686,7 +797,7 @@ class _AppleGlassLoginScreenState extends State<AppleGlassLoginScreen> {
 }
 
 // ==========================================
-// 7. التنقل الرئيسي
+// 7. التنقل الرئيسي (التحديث الفوري الشامل للغة)
 // ==========================================
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
@@ -699,28 +810,33 @@ class _MainNavigationState extends State<MainNavigation> {
   @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder<Locale>(
-        valueListenable: localeNotifier,
-        builder: (context, locale, child) {
-          return Scaffold(
-            body: IndexedStack(index: _currentIndex, children: const [
-              LessonsGridPage(),
-              QuizzesGridPage(),
-              ProfilePage()
-            ]),
-            bottomNavigationBar: NavigationBar(
-              selectedIndex: _currentIndex,
-              onDestinationSelected: (i) => setState(() => _currentIndex = i),
-              destinations: [
-                NavigationDestination(
-                    icon: const Icon(Icons.book), label: S.get('lessons')),
-                NavigationDestination(
-                    icon: const Icon(Icons.quiz), label: S.get('quizzes')),
-                NavigationDestination(
-                    icon: const Icon(Icons.person), label: S.get('profile')),
-              ],
-            ),
-          );
-        });
+      valueListenable: localeNotifier,
+      builder: (context, locale, child) {
+        return Scaffold(
+          body: IndexedStack(
+            key: ValueKey(locale.languageCode),
+            index: _currentIndex,
+            children: [
+              LessonsGridPage(key: ValueKey('home_${locale.languageCode}')),
+              QuizzesGridPage(key: ValueKey('quiz_${locale.languageCode}')),
+              ProfilePage(key: ValueKey('prof_${locale.languageCode}'))
+            ],
+          ),
+          bottomNavigationBar: NavigationBar(
+            selectedIndex: _currentIndex,
+            onDestinationSelected: (i) => setState(() => _currentIndex = i),
+            destinations: [
+              NavigationDestination(
+                  icon: const Icon(Icons.book), label: S.get('lessons')),
+              NavigationDestination(
+                  icon: const Icon(Icons.quiz), label: S.get('quizzes')),
+              NavigationDestination(
+                  icon: const Icon(Icons.person), label: S.get('profile')),
+            ],
+          ),
+        );
+      },
+    );
   }
 }
 
@@ -745,7 +861,7 @@ final List<SubjectData> appSubjects = [
 ];
 
 // ==========================================
-// 8. الرئيسية: الترحيب والعداد
+// 8. الرئيسية: الترحيب والعداد المتحرك
 // ==========================================
 class LessonsGridPage extends StatefulWidget {
   const LessonsGridPage({super.key});
@@ -778,27 +894,22 @@ class _LessonsGridPageState extends State<LessonsGridPage> {
 
   Future<void> _fetchExamConfig() async {
     try {
-      final resConfig = await supabase
+      final res = await supabase
           .from('subject_config')
-          .select('lesson_count')
+          .select()
           .eq('id', 'national_exam_config')
           .maybeSingle();
-      final resMeta = await supabase
-          .from('lesson_metadata')
-          .select('custom_title')
-          .eq('id', 'national_exam_config')
-          .maybeSingle();
-
-      if (mounted) {
+      if (mounted && res != null) {
         setState(() {
-          if (resMeta != null && resMeta['custom_title'] != null)
-            examTitle = resMeta['custom_title'];
-          if (resConfig != null && resConfig['lesson_count'] != null)
-            examDate =
-                DateTime.fromMillisecondsSinceEpoch(resConfig['lesson_count']);
+          examTitle = res['custom_title'] ?? "";
+          if (res['lesson_count'] != null) {
+            examDate = DateTime.fromMillisecondsSinceEpoch(res['lesson_count']);
+          }
         });
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint("Error fetching exam: $e");
+    }
   }
 
   void _setExamConfig() {
@@ -814,20 +925,20 @@ class _LessonsGridPageState extends State<LessonsGridPage> {
           return AlertDialog(
             shape:
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            title: const Text("إعداد الامتحان الوطني",
-                style: TextStyle(fontWeight: FontWeight.bold)),
+            title: Text(S.get('exam_setup'),
+                style: const TextStyle(fontWeight: FontWeight.bold)),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 TextField(
                     controller: titleCtrl,
                     decoration:
-                        const InputDecoration(labelText: "عنوان الامتحان")),
+                        InputDecoration(labelText: S.get('exam_title'))),
                 const SizedBox(height: 20),
                 ElevatedButton.icon(
                   icon: const Icon(Icons.calendar_month),
                   label: Text(tempDate == null
-                      ? "اختر التاريخ"
+                      ? S.get('choose_date')
                       : DateFormat('yyyy-MM-dd').format(tempDate!)),
                   style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blueAccent,
@@ -860,14 +971,8 @@ class _LessonsGridPageState extends State<LessonsGridPage> {
                           try {
                             await supabase.from('subject_config').upsert({
                               'id': 'national_exam_config',
-                              'lesson_count': tempDate!.millisecondsSinceEpoch
-                            });
-                            await supabase.from('lesson_metadata').upsert({
-                              'id': 'national_exam_config',
-                              'subjectId': 'global',
-                              'custom_title': titleCtrl.text.isEmpty
-                                  ? S.get('exam_countdown')
-                                  : titleCtrl.text
+                              'lesson_count': tempDate!.millisecondsSinceEpoch,
+                              'custom_title': titleCtrl.text.trim()
                             });
 
                             _fetchExamConfig();
@@ -875,8 +980,7 @@ class _LessonsGridPageState extends State<LessonsGridPage> {
                           } catch (e) {
                             setDialogState(() => isSaving = false);
                             ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                                content: Text(
-                                    "لم يتم الحفظ، تأكد من إضافة عمود custom_title في Supabase: $e"),
+                                content: Text("Error: $e"),
                                 backgroundColor: Colors.red));
                           }
                         }
@@ -1065,7 +1169,7 @@ class _LessonsGridPageState extends State<LessonsGridPage> {
 }
 
 // ==========================================
-// 9. الدروس وميزة الخطة الذكية
+// 9. الدروس وميزة الخطة الذكية وأزرار (+ و -) والقلم
 // ==========================================
 class SubjectLessonsPage extends StatefulWidget {
   final SubjectData subject;
@@ -1110,6 +1214,44 @@ class _SubjectLessonsPageState extends State<SubjectLessonsPage> {
     }
   }
 
+  void _editTitleDialog(String lessonId, String currentTitle) {
+    final ctrl = TextEditingController(text: currentTitle);
+    showDialog(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: Text(S.get('edit_title')),
+        content: TextField(
+            controller: ctrl,
+            decoration: InputDecoration(labelText: S.get('new_title'))),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(c), child: Text(S.get('cancel'))),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+                backgroundColor: widget.subject.color,
+                foregroundColor: Colors.white),
+            onPressed: () async {
+              if (ctrl.text.isNotEmpty) {
+                try {
+                  await supabase.from('lesson_metadata').upsert({
+                    'id': lessonId,
+                    'subjectId': widget.subject.id,
+                    'custom_title': ctrl.text
+                  });
+                } catch (e) {
+                  ScaffoldMessenger.of(context)
+                      .showSnackBar(SnackBar(content: Text('Error: $e')));
+                }
+              }
+              if (mounted) Navigator.pop(context);
+            },
+            child: Text(S.get('save')),
+          ),
+        ],
+      ),
+    );
+  }
+
   double _calculateDailyLessons(int totalLessons) {
     if (targetDate == null) return 0;
     int remainingDays = targetDate!.difference(DateTime.now()).inDays;
@@ -1140,12 +1282,18 @@ class _SubjectLessonsPageState extends State<SubjectLessonsPage> {
                 .from('lesson_metadata')
                 .stream(primaryKey: ['id']).eq('subjectId', widget.subject.id),
             builder: (context, snapshot) {
-              Map<String, String> customTitles = {};
+              List<Map<String, dynamic>> metaDataList = [];
               if (snapshot.hasData) {
-                for (var row in snapshot.data!) {
-                  if (row.containsKey('custom_title'))
-                    customTitles[row['id']] = row['custom_title'];
-                }
+                metaDataList = snapshot.data!;
+                CacheManager.save('meta_${widget.subject.id}', metaDataList);
+              } else {
+                metaDataList = CacheManager.load('meta_${widget.subject.id}');
+              }
+
+              Map<String, String> customTitles = {};
+              for (var row in metaDataList) {
+                if (row.containsKey('custom_title'))
+                  customTitles[row['id']] = row['custom_title'];
               }
 
               double dailyRequired = _calculateDailyLessons(currentLessonCount);
@@ -1168,7 +1316,7 @@ class _SubjectLessonsPageState extends State<SubjectLessonsPage> {
                           Expanded(
                             child: targetDate != null
                                 ? Text(
-                                    "${S.get('plan_goal')}\nعليك قراءة ${dailyRequired.toStringAsFixed(1)} ${S.get('daily_plan')}",
+                                    "${S.get('plan_goal')}\n${dailyRequired.toStringAsFixed(1)} ${S.get('daily_plan')}",
                                     style: const TextStyle(
                                         fontWeight: FontWeight.bold,
                                         fontSize: 14))
@@ -1221,8 +1369,13 @@ class _SubjectLessonsPageState extends State<SubjectLessonsPage> {
                                     decoration: isCompleted
                                         ? TextDecoration.lineThrough
                                         : null)),
-                            trailing:
-                                const Icon(Icons.arrow_forward_ios, size: 16),
+                            trailing: isTeacherGlobal
+                                ? IconButton(
+                                    icon: const Icon(Icons.edit,
+                                        color: Colors.blueGrey),
+                                    onPressed: () => _editTitleDialog(
+                                        lessonId, displayTitle))
+                                : const Icon(Icons.arrow_forward_ios, size: 16),
                             onTap: () async {
                               await Navigator.push(
                                   context,
@@ -1248,26 +1401,39 @@ class _SubjectLessonsPageState extends State<SubjectLessonsPage> {
                         children: [
                           IconButton(
                               icon: const Icon(Icons.remove_circle,
-                                  color: Colors.red),
-                              onPressed: () =>
-                                  supabase.from('subject_config').upsert({
-                                    'id': widget.subject.id,
-                                    'lesson_count': currentLessonCount > 1
-                                        ? currentLessonCount - 1
-                                        : 1
-                                  })),
-                          Text("عدد الدروس: $currentLessonCount",
-                              style:
-                                  const TextStyle(fontWeight: FontWeight.bold)),
+                                  color: Colors.red, size: 35),
+                              onPressed: () async {
+                                if (currentLessonCount > 1) {
+                                  try {
+                                    await supabase
+                                        .from('subject_config')
+                                        .upsert({
+                                      'id': widget.subject.id,
+                                      'lesson_count': currentLessonCount - 1
+                                    });
+                                  } catch (e) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(content: Text('Error: $e')));
+                                  }
+                                }
+                              }),
+                          Text("${S.get('lesson_count')} $currentLessonCount",
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.bold, fontSize: 18)),
                           IconButton(
                               icon: const Icon(Icons.add_circle,
-                                  color: Colors.green),
-                              onPressed: () => supabase
-                                      .from('subject_config')
-                                      .upsert({
+                                  color: Colors.green, size: 35),
+                              onPressed: () async {
+                                try {
+                                  await supabase.from('subject_config').upsert({
                                     'id': widget.subject.id,
                                     'lesson_count': currentLessonCount + 1
-                                  })),
+                                  });
+                                } catch (e) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(content: Text('Error: $e')));
+                                }
+                              }),
                         ],
                       ),
                     )
@@ -1314,10 +1480,11 @@ class _LessonContentPageState extends State<LessonContentPage> {
     List<String> comp = prefs.getStringList(
             'completed_${supabase.auth.currentUser?.id}_${widget.subjectId}') ??
         [];
-    if (isCompleted)
+    if (isCompleted) {
       comp.remove(widget.lessonId);
-    else
+    } else {
       comp.add(widget.lessonId);
+    }
     prefs.setStringList(
         'completed_${supabase.auth.currentUser?.id}_${widget.subjectId}', comp);
     setState(() => isCompleted = !isCompleted);
@@ -1335,14 +1502,15 @@ class _LessonContentPageState extends State<LessonContentPage> {
         String safeName = "${DateTime.now().millisecondsSinceEpoch}_doc.$ext";
         String path = 'lesson_files/${widget.lessonId}/$safeName';
 
-        if (kIsWeb)
+        if (kIsWeb) {
           await supabase.storage
               .from('jaafari_storage')
               .uploadBinary(path, result.files.single.bytes!);
-        else
+        } else {
           await supabase.storage
               .from('jaafari_storage')
               .upload(path, File(result.files.single.path!));
+        }
 
         String url =
             supabase.storage.from('jaafari_storage').getPublicUrl(path);
@@ -1372,9 +1540,17 @@ class _LessonContentPageState extends State<LessonContentPage> {
                   .eq('lessonId', widget.lessonId)
                   .order('created_at', ascending: true),
               builder: (context, snapshot) {
-                if (!snapshot.hasData)
+                List<Map<String, dynamic>> contents = [];
+                if (snapshot.hasData) {
+                  contents = snapshot.data!;
+                  CacheManager.save('contents_${widget.lessonId}', contents);
+                } else {
+                  contents = CacheManager.load('contents_${widget.lessonId}');
+                }
+
+                if (contents.isEmpty &&
+                    snapshot.connectionState == ConnectionState.waiting)
                   return const Center(child: CircularProgressIndicator());
-                var contents = snapshot.data!;
                 if (contents.isEmpty)
                   return Center(child: Text(S.get('offline_msg')));
 
@@ -1409,7 +1585,7 @@ class _LessonContentPageState extends State<LessonContentPage> {
                                     const Icon(Icons.picture_as_pdf,
                                         size: 35, color: Colors.red),
                                     const SizedBox(width: 10),
-                                    Text("فتح الـ PDF",
+                                    Text(S.get('open_pdf'),
                                         style: TextStyle(
                                             fontSize: 16,
                                             color: widget.color,
@@ -1439,7 +1615,6 @@ class _LessonContentPageState extends State<LessonContentPage> {
                                   width: double.infinity,
                                   padding: const EdgeInsets.all(10),
                                   child: contentUI),
-                              // ⚠️ استخدام ميزة الحذف السريع والفعال هنا
                               Positioned(
                                   top: 0,
                                   left: 0,
@@ -1483,13 +1658,14 @@ class _LessonContentPageState extends State<LessonContentPage> {
           ? FloatingActionButton(
               onPressed: () async {
                 String? url = await _uploadSafeFile();
-                if (url != null)
-                  supabase.from('lesson_contents').insert({
+                if (url != null) {
+                  await supabase.from('lesson_contents').insert({
                     'lessonId': widget.lessonId,
                     'type': 'file',
                     'data': url,
                     'created_at': DateTime.now().toIso8601String()
                   });
+                }
               },
               backgroundColor: widget.color,
               child: isUploading
@@ -1543,95 +1719,182 @@ class QuizzesGridPage extends StatelessWidget {
   }
 }
 
-// ⚠️ تمت إضافة شريط التحكم بزيادة وتقليل الاختبارات للأستاذ هنا
-class SubjectQuizzesListPage extends StatelessWidget {
+class SubjectQuizzesListPage extends StatefulWidget {
   final SubjectData subject;
   const SubjectQuizzesListPage({super.key, required this.subject});
+  @override
+  State<SubjectQuizzesListPage> createState() => _SubjectQuizzesListPageState();
+}
+
+class _SubjectQuizzesListPageState extends State<SubjectQuizzesListPage> {
+  void _editQuizTitle(String quizId, String currentTitle) {
+    final ctrl = TextEditingController(text: currentTitle);
+    showDialog(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: Text(S.get('edit_title')),
+        content: TextField(
+            controller: ctrl,
+            decoration: InputDecoration(labelText: S.get('new_title'))),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(c), child: Text(S.get('cancel'))),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+                backgroundColor: widget.subject.color,
+                foregroundColor: Colors.white),
+            onPressed: () async {
+              if (ctrl.text.isNotEmpty) {
+                try {
+                  await supabase.from('quiz_metadata').upsert({
+                    'id': quizId,
+                    'subjectId': widget.subject.id,
+                    'custom_title': ctrl.text
+                  });
+                } catch (e) {
+                  ScaffoldMessenger.of(context)
+                      .showSnackBar(SnackBar(content: Text('Error: $e')));
+                }
+              }
+              if (mounted) Navigator.pop(context);
+            },
+            child: Text(S.get('save')),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-          title: Text("${S.get('quiz_title')} - ${S.get(subject.nameKey)}"),
-          backgroundColor: subject.color,
+          title:
+              Text("${S.get('quiz_title')} - ${S.get(widget.subject.nameKey)}"),
+          backgroundColor: widget.subject.color,
           foregroundColor: Colors.white),
       body: StreamBuilder<List<Map<String, dynamic>>>(
         stream: supabase
             .from('subject_config')
-            .stream(primaryKey: ['id']).eq('id', "${subject.id}_quiz"),
+            .stream(primaryKey: ['id']).eq('id', "${widget.subject.id}_quiz"),
         builder: (context, configSnap) {
           int currentCount = configSnap.hasData && configSnap.data!.isNotEmpty
-              ? configSnap.data!.first['quiz_count'] ?? 10
+              ? configSnap.data!.first['lesson_count'] ?? 10
               : 10;
-          return Column(
-            children: [
-              Expanded(
-                child: ListView.builder(
-                  padding: const EdgeInsets.all(15),
-                  itemCount: currentCount,
-                  itemBuilder: (ctx, i) {
-                    String quizId = "${subject.id}_quiz_${i + 1}";
-                    String displayTitle = "اختبار ${i + 1}";
-                    return Card(
-                      elevation: 0,
-                      margin: const EdgeInsets.only(bottom: 12),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(15),
-                          side: BorderSide(
-                              color: subject.color.withOpacity(0.3))),
-                      child: ListTile(
-                        leading: const Icon(Icons.assignment,
-                            color: Colors.orange, size: 30),
-                        title: Text(displayTitle,
-                            style:
-                                const TextStyle(fontWeight: FontWeight.bold)),
-                        trailing: const Icon(Icons.play_circle_fill,
-                            color: Colors.green, size: 35),
-                        onTap: () => Navigator.push(
-                            ctx,
-                            MaterialPageRoute(
-                                builder: (_) => QuizPlayArea(
-                                    quizId: quizId,
-                                    color: subject.color,
-                                    title: displayTitle))),
-                      ),
-                    );
-                  },
-                ),
-              ),
-              // ⚠️ شريط التحكم المخصص للأستاذ لزيادة وتقليل الاختبارات
-              if (isTeacherGlobal)
-                Container(
-                  color: Colors.white,
-                  padding: const EdgeInsets.all(10),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      IconButton(
-                          icon: const Icon(Icons.remove_circle,
-                              color: Colors.red, size: 35),
-                          onPressed: () =>
-                              supabase.from('subject_config').upsert({
-                                'id': "${subject.id}_quiz",
-                                'quiz_count':
-                                    currentCount > 1 ? currentCount - 1 : 1
-                              })),
-                      Text("عدد الاختبارات: $currentCount",
-                          style: const TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 18)),
-                      IconButton(
-                          icon: const Icon(Icons.add_circle,
-                              color: Colors.green, size: 35),
-                          onPressed: () => supabase
-                                  .from('subject_config')
-                                  .upsert({
-                                'id': "${subject.id}_quiz",
-                                'quiz_count': currentCount + 1
-                              })),
-                    ],
+
+          return StreamBuilder<List<Map<String, dynamic>>>(
+            stream: supabase
+                .from('quiz_metadata')
+                .stream(primaryKey: ['id']).eq('subjectId', widget.subject.id),
+            builder: (context, snapshot) {
+              List<Map<String, dynamic>> metaDataList = [];
+              if (snapshot.hasData) {
+                metaDataList = snapshot.data!;
+                CacheManager.save(
+                    'quiz_meta_${widget.subject.id}', metaDataList);
+              } else {
+                metaDataList =
+                    CacheManager.load('quiz_meta_${widget.subject.id}');
+              }
+
+              Map<String, String> customTitles = {};
+              for (var row in metaDataList) {
+                if (row.containsKey('custom_title'))
+                  customTitles[row['id']] = row['custom_title'];
+              }
+
+              return Column(
+                children: [
+                  Expanded(
+                    child: ListView.builder(
+                      padding: const EdgeInsets.all(15),
+                      itemCount: currentCount,
+                      itemBuilder: (ctx, i) {
+                        String quizId = "${widget.subject.id}_quiz_${i + 1}";
+                        String displayTitle = customTitles[quizId] ??
+                            "${S.get('quiz_title')} ${i + 1}";
+                        return Card(
+                          elevation: 0,
+                          margin: const EdgeInsets.only(bottom: 12),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(15),
+                              side: BorderSide(
+                                  color:
+                                      widget.subject.color.withOpacity(0.3))),
+                          child: ListTile(
+                            leading: const Icon(Icons.assignment,
+                                color: Colors.orange, size: 30),
+                            title: Text(displayTitle,
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold)),
+                            trailing: isTeacherGlobal
+                                ? IconButton(
+                                    icon: const Icon(Icons.edit,
+                                        color: Colors.blueGrey),
+                                    onPressed: () =>
+                                        _editQuizTitle(quizId, displayTitle))
+                                : const Icon(Icons.play_circle_fill,
+                                    color: Colors.green, size: 35),
+                            onTap: () => Navigator.push(
+                                ctx,
+                                MaterialPageRoute(
+                                    builder: (_) => QuizPlayArea(
+                                        quizId: quizId,
+                                        color: widget.subject.color,
+                                        title: displayTitle))),
+                          ),
+                        );
+                      },
+                    ),
                   ),
-                )
-            ],
+                  if (isTeacherGlobal)
+                    Container(
+                      color: Colors.white,
+                      padding: const EdgeInsets.all(10),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          IconButton(
+                              icon: const Icon(Icons.remove_circle,
+                                  color: Colors.red, size: 35),
+                              onPressed: () async {
+                                if (currentCount > 1) {
+                                  try {
+                                    await supabase
+                                        .from('subject_config')
+                                        .upsert({
+                                      'id': "${widget.subject.id}_quiz",
+                                      'lesson_count': currentCount - 1
+                                    });
+                                  } catch (e) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(content: Text('Error: $e')));
+                                  }
+                                }
+                              }),
+                          Text("${S.get('quiz_count')} $currentCount",
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.bold, fontSize: 18)),
+                          IconButton(
+                              icon: const Icon(Icons.add_circle,
+                                  color: Colors.green, size: 35),
+                              onPressed: () async {
+                                try {
+                                  await supabase.from('subject_config').upsert({
+                                    'id': "${widget.subject.id}_quiz",
+                                    'lesson_count': currentCount + 1
+                                  });
+                                } catch (e) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(content: Text('Error: $e')));
+                                }
+                              }),
+                        ],
+                      ),
+                    )
+                ],
+              );
+            },
           );
         },
       ),
@@ -1666,14 +1929,15 @@ class _QuizPlayAreaState extends State<QuizPlayArea> {
         String ext = result.files.single.extension ?? 'pdf';
         String path =
             'quizzes/${widget.quizId}/${DateTime.now().millisecondsSinceEpoch}.$ext';
-        if (kIsWeb)
+        if (kIsWeb) {
           await supabase.storage
               .from('jaafari_storage')
               .uploadBinary(path, result.files.single.bytes!);
-        else
+        } else {
           await supabase.storage
               .from('jaafari_storage')
               .upload(path, File(result.files.single.path!));
+        }
         String url =
             supabase.storage.from('jaafari_storage').getPublicUrl(path);
 
@@ -1699,48 +1963,54 @@ class _QuizPlayAreaState extends State<QuizPlayArea> {
       context: context,
       builder: (c) => StatefulBuilder(
         builder: (ctx, setD) => AlertDialog(
-            title: Text(S.get('add_q')),
-            content: SingleChildScrollView(
-                child: Column(mainAxisSize: MainAxisSize.min, children: [
-              TextField(
-                  controller: qCtrl,
-                  decoration: InputDecoration(labelText: S.get('q_text'))),
-              TextField(
-                  controller: o1,
-                  decoration: const InputDecoration(labelText: "خيار 1")),
-              TextField(
-                  controller: o2,
-                  decoration: const InputDecoration(labelText: "خيار 2")),
-              TextField(
-                  controller: o3,
-                  decoration: const InputDecoration(labelText: "خيار 3")),
-              TextField(
-                  controller: o4,
-                  decoration: const InputDecoration(labelText: "خيار 4")),
-              DropdownButton<int>(
-                  value: correctOpt,
-                  items: [1, 2, 3, 4]
-                      .map((e) => DropdownMenuItem(
-                          value: e, child: Text("${S.get('correct_opt')}: $e")))
-                      .toList(),
-                  onChanged: (v) => setD(() => correctOpt = v!))
-            ])),
-            actions: [
-              ElevatedButton(
-                  onPressed: () {
-                    if (qCtrl.text.isNotEmpty && o1.text.isNotEmpty) {
-                      supabase.from('quiz_questions').insert({
+          title: Text(S.get('add_q')),
+          content: SingleChildScrollView(
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+            TextField(
+                controller: qCtrl,
+                decoration: InputDecoration(labelText: S.get('q_text'))),
+            TextField(
+                controller: o1,
+                decoration: InputDecoration(labelText: S.get('opt1'))),
+            TextField(
+                controller: o2,
+                decoration: InputDecoration(labelText: S.get('opt2'))),
+            TextField(
+                controller: o3,
+                decoration: InputDecoration(labelText: S.get('opt3'))),
+            TextField(
+                controller: o4,
+                decoration: InputDecoration(labelText: S.get('opt4'))),
+            DropdownButton<int>(
+                value: correctOpt,
+                items: [1, 2, 3, 4]
+                    .map((e) => DropdownMenuItem(
+                        value: e, child: Text("${S.get('correct_opt')}: $e")))
+                    .toList(),
+                onChanged: (v) => setD(() => correctOpt = v!))
+          ])),
+          actions: [
+            ElevatedButton(
+                onPressed: () async {
+                  if (qCtrl.text.isNotEmpty && o1.text.isNotEmpty) {
+                    try {
+                      await supabase.from('quiz_questions').insert({
                         'quizId': widget.quizId,
                         'q': qCtrl.text,
                         'opts': [o1.text, o2.text, o3.text, o4.text],
                         'ans': correctOpt - 1,
                         'created_at': DateTime.now().toIso8601String()
                       });
-                      Navigator.pop(c);
+                      if (mounted) Navigator.pop(c);
+                    } catch (e) {
+                      ScaffoldMessenger.of(context)
+                          .showSnackBar(SnackBar(content: Text('Error: $e')));
                     }
-                  },
-                  child: Text(S.get('save')))
-            ]),
+                  }
+                },
+                child: Text(S.get('save')))
+          ],
+        ),
       ),
     );
   }
@@ -1756,10 +2026,10 @@ class _QuizPlayAreaState extends State<QuizPlayArea> {
                 style: const TextStyle(
                     fontSize: 18, fontWeight: FontWeight.bold))),
         if (files.isEmpty)
-          const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 15),
-              child: Text("لا توجد ملفات مرفقة.",
-                  style: TextStyle(color: Colors.grey))),
+          Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 15),
+              child: Text(S.get('no_files'),
+                  style: const TextStyle(color: Colors.grey))),
         ListView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
@@ -1775,9 +2045,8 @@ class _QuizPlayAreaState extends State<QuizPlayArea> {
               child: ListTile(
                 leading: Icon(isPdf ? Icons.picture_as_pdf : Icons.image,
                     color: isPdf ? Colors.red : Colors.blue, size: 40),
-                title: Text(isPdf ? "ملف PDF" : "صورة",
+                title: Text(isPdf ? S.get('open_pdf') : S.get('open_img'),
                     style: const TextStyle(fontWeight: FontWeight.bold)),
-                // ⚠️ استخدام دالة الحذف السريع لملفات الاختبار أيضاً
                 trailing: isTeacherGlobal
                     ? IconButton(
                         icon: const Icon(Icons.delete, color: Colors.red),
@@ -1785,7 +2054,7 @@ class _QuizPlayAreaState extends State<QuizPlayArea> {
                             context, 'lesson_contents', files[i]['id']))
                     : null,
                 onTap: () {
-                  if (isPdf)
+                  if (isPdf) {
                     Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -1793,8 +2062,9 @@ class _QuizPlayAreaState extends State<QuizPlayArea> {
                                 pdfUrl: files[i]['data'],
                                 title: sectionTitle,
                                 color: widget.color)));
-                  else
+                  } else {
                     showFullScreenImage(context, files[i]['data']);
+                  }
                 },
               ),
             );
@@ -1822,11 +2092,17 @@ class _QuizPlayAreaState extends State<QuizPlayArea> {
                   .eq('lessonId', widget.quizId)
                   .order('created_at'),
               builder: (context, snapshot) {
-                if (!snapshot.hasData) return const CircularProgressIndicator();
-                var examFiles = snapshot.data!
-                    .where((item) => item['type'] == 'exam_file')
-                    .toList();
-                var correctionFiles = snapshot.data!
+                List<Map<String, dynamic>> data = [];
+                if (snapshot.hasData) {
+                  data = snapshot.data!;
+                  CacheManager.save('quiz_contents_${widget.quizId}', data);
+                } else {
+                  data = CacheManager.load('quiz_contents_${widget.quizId}');
+                }
+
+                var examFiles =
+                    data.where((item) => item['type'] == 'exam_file').toList();
+                var correctionFiles = data
                     .where((item) => item['type'] == 'correction_file')
                     .toList();
 
@@ -1879,18 +2155,29 @@ class _QuizPlayAreaState extends State<QuizPlayArea> {
                     .eq('quizId', widget.quizId)
                     .order('created_at'),
                 builder: (context, snapshot) {
-                  if (!snapshot.hasData) return const SizedBox();
+                  List<Map<String, dynamic>> qData = [];
+                  if (snapshot.hasData) {
+                    qData = snapshot.data!;
+                    CacheManager.save('quiz_q_${widget.quizId}', qData);
+                  } else {
+                    qData = CacheManager.load('quiz_q_${widget.quizId}');
+                  }
+
+                  if (qData.isEmpty)
+                    return Padding(
+                        padding: const EdgeInsets.all(15),
+                        child: Text(S.get('no_qcm'),
+                            style: const TextStyle(color: Colors.grey)));
                   return ListView.builder(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
-                    itemCount: snapshot.data!.length,
-                    // ⚠️ استخدام دالة الحذف السريع لأسئلة الـ QCM
+                    itemCount: qData.length,
                     itemBuilder: (ctx, i) => ListTile(
-                        title: Text(snapshot.data![i]['q']),
+                        title: Text(qData[i]['q']),
                         trailing: IconButton(
                             icon: const Icon(Icons.delete, color: Colors.red),
-                            onPressed: () => quickDelete(context,
-                                'quiz_questions', snapshot.data![i]['id']))),
+                            onPressed: () => quickDelete(
+                                context, 'quiz_questions', qData[i]['id']))),
                   );
                 },
               )
@@ -1956,15 +2243,24 @@ class _InteractiveQuizScreenState extends State<InteractiveQuizScreen> {
   }
 
   void _fetchQuestions() async {
-    final res = await supabase
-        .from('quiz_questions')
-        .select()
-        .eq('quizId', widget.quizId)
-        .order('created_at');
-    setState(() {
-      questionsList = List<Map<String, dynamic>>.from(res);
-      isLoading = false;
-    });
+    try {
+      final res = await supabase
+          .from('quiz_questions')
+          .select()
+          .eq('quizId', widget.quizId)
+          .order('created_at');
+      CacheManager.save('interactive_q_${widget.quizId}', res);
+      setState(() {
+        questionsList = List<Map<String, dynamic>>.from(res);
+        isLoading = false;
+      });
+    } catch (e) {
+      var cached = CacheManager.load('interactive_q_${widget.quizId}');
+      setState(() {
+        questionsList = cached;
+        isLoading = false;
+      });
+    }
   }
 
   @override
@@ -1978,7 +2274,7 @@ class _InteractiveQuizScreenState extends State<InteractiveQuizScreen> {
       return Scaffold(
           appBar: AppBar(
               title: Text(widget.title), backgroundColor: widget.themeColor),
-          body: const Center(child: Text("لا توجد أسئلة تفاعلية.")));
+          body: Center(child: Text(S.get('no_qcm'))));
 
     if (isFinished) {
       int score = 0;
@@ -2025,7 +2321,7 @@ class _InteractiveQuizScreenState extends State<InteractiveQuizScreen> {
                                 const TextStyle(fontWeight: FontWeight.bold)),
                         const SizedBox(height: 5),
                         Text(
-                            "${S.get('your_ans')} ${studentAnswers[i] == null ? '---' : qData['opts'][studentAnswers[i]]}",
+                            "${S.get('your_ans')} ${studentAnswers[i] == null ? S.get('no_ans') : qData['opts'][studentAnswers[i]]}",
                             style: TextStyle(
                                 color: isCorrect ? Colors.green : Colors.red,
                                 fontWeight: FontWeight.bold)),
@@ -2104,10 +2400,11 @@ class _InteractiveQuizScreenState extends State<InteractiveQuizScreen> {
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(15))),
                 onPressed: () {
-                  if (currentQIndex < questionsList.length - 1)
+                  if (currentQIndex < questionsList.length - 1) {
                     setState(() => currentQIndex++);
-                  else
+                  } else {
                     setState(() => isFinished = true);
+                  }
                 },
                 child: Text(
                     currentQIndex < questionsList.length - 1
@@ -2125,7 +2422,7 @@ class _InteractiveQuizScreenState extends State<InteractiveQuizScreen> {
 }
 
 // ==========================================
-// 12. صفحة الملف الشخصي والدعم (Instagram) وتعدد اللغات
+// 12. صفحة الملف الشخصي والدعم (Instagram) وتعدد اللغات الفوري
 // ==========================================
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -2135,19 +2432,19 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   void _changeLanguage(String code) {
-    localeNotifier.value = Locale(code); // التغيير يحدث فوراً
+    localeNotifier.value =
+        Locale(code); // ⚠️ هذا السطر يغيّر التطبيق بأكمله فوراً وفي لحظتها
     prefs.setString('app_lang', code);
   }
 
   void _contactInstagram() async {
-    final Uri url =
-        Uri.parse('https://www.instagram.com/j._.billal?igsh=ampteG1peDl5M25p');
-    if (await canLaunchUrl(url)) {
+    final Uri url = Uri.parse('https://www.instagram.com/j._.billal');
+    try {
       await launchUrl(url, mode: LaunchMode.externalApplication);
-    } else {
+    } catch (e) {
       if (mounted)
         ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('لا يمكن فتح الرابط')));
+            .showSnackBar(SnackBar(content: Text(S.get('ig_error'))));
     }
   }
 
