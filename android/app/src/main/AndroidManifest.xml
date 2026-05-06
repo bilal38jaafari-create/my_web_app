@@ -1,11 +1,18 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-<!-- أضف هذين السطرين هنا لكي يسمح الهاتف للتطبيق بالاتصال بالإنترنت وSupabase -->
+    <!-- أضف هذين السطرين هنا لكي يسمح الهاتف للتطبيق بالاتصال بالإنترنت وSupabase -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    
     <application
         android:label="Jaafari Guide"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
+        
+        <!-- ⚠️ السطر السحري لحل مشكلة الخروج المفاجئ (AdMob ID) ⚠️ -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-3940256099942544~3347511713"/>
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
