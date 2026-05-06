@@ -13,7 +13,7 @@ import 'dart:io' show File;
 import 'dart:typed_data';
 import 'dart:convert';
 import 'dart:async';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart'; // ⚠️ تم إضافة هذا للتعرف على نوع الجهاز (أندرويد/آيفون)
 import 'package:url_launcher/url_launcher.dart';
 
 // ==========================================
@@ -125,98 +125,73 @@ class CacheManager {
 }
 
 // ==========================================
-// 3. القاموس (تم إزالة القفل من النص لكي نبرمجه بذكاء)
+// 3. القاموس الشامل
 // ==========================================
 class S {
   static const Map<String, Map<String, String>> _data = {
     'ar': {
-      'app_title': 'Jaafari Guide',
-      'lessons': 'الدروس',
-      'quizzes': 'الاختبارات',
-      'profile': 'حسابي',
-      'email': 'البريد الإلكتروني',
-      'pass': 'كلمة المرور',
+      'app_title': 'Jaafari Guide', 'lessons': 'الدروس',
+      'quizzes': 'الاختبارات', 'profile': 'حسابي',
+      'email': 'البريد الإلكتروني', 'pass': 'كلمة المرور',
       'confirm_pass': 'تأكيد كلمة المرور',
-      'first_name': 'الاسم الشخصي',
-      'last_name': 'النسب (اللقب)',
+      'first_name': 'الاسم الشخصي', 'last_name': 'النسب (اللقب)',
       'login': 'تسجيل الدخول',
-      'register': 'إنشاء حساب تلميذ',
-      'have_acc': 'لديك حساب؟ سجل الدخول',
+      'register': 'إنشاء حساب تلميذ', 'have_acc': 'لديك حساب؟ سجل الدخول',
       'no_acc': 'تلميذ جديد؟ أنشئ حساباً',
       'pass_mismatch': 'كلمات المرور غير متطابقة!',
       'fill_fields': 'يرجى ملء جميع الحقول',
       'wrong_auth': 'البريد الإلكتروني أو كلمة المرور غير صحيحة.',
       'auth_error': 'حدث خطأ أثناء المصادقة.',
-      'subjects': 'المواد الدراسية',
-      'lesson': 'الدرس',
-      'edit_title': 'تعديل العنوان',
-      'new_title': 'العنوان الجديد',
-      'dark_mode': 'الوضع الليلي',
-      'lang': 'لغة التطبيق',
-      'logout': 'تسجيل الخروج',
-      'support': 'التواصل مع الدعم (Instagram)',
-      'math': 'الرياضيات',
-      'physics': 'الفيزياء والكيمياء',
+      'subjects': 'المواد الدراسية', 'lesson': 'الدرس',
+      'edit_title': 'تعديل العنوان', 'new_title': 'العنوان الجديد',
+      'dark_mode': 'الوضع الليلي', 'lang': 'لغة التطبيق',
+      'logout': 'تسجيل الخروج', 'support': 'التواصل مع الدعم (Instagram)',
+      'math': 'الرياضيات', 'physics': 'الفيزياء والكيمياء',
       'science': 'علوم الحياة والأرض',
-      'english': 'اللغة الإنجليزية',
-      'philosophy': 'الفلسفة',
-      'save': 'حفظ',
-      'cancel': 'إلغاء',
-      'delete': 'حذف',
+      'english': 'اللغة الإنجليزية', 'philosophy': 'الفلسفة',
+      'save': 'حفظ', 'cancel': 'إلغاء', 'delete': 'حذف',
       'offline_msg': 'أنت الآن تتصفح بدون إنترنت. (البيانات محفوظة)',
-      'welcome': 'مرحباً',
-      'student': 'تلميذنا الطموح',
-      'teacher': 'الأستاذ بلال الجعفري',
-      'exam_countdown': 'الامتحان الوطني',
-      'days': 'أيام',
-      'hours': 'ساعات',
+      'welcome': 'مرحباً', 'student': 'تلميذنا الطموح',
+      'teacher': 'الأستاذ بلال الجعفري', 'exam_countdown': 'الامتحان الوطني',
+      'days': 'أيام', 'hours': 'ساعات',
       'minutes': 'دقائق',
       'seconds': 'ثواني',
       'not_set': 'لم يتم تحديد موعد الامتحان بعد.',
       'set_plan': 'تحديد خطة المادة (تاريخ الانتهاء)',
       'plan_goal': 'خطة العمل:',
-      'daily_plan': 'درس يومياً للانتهاء في الموعد 🚀',
-      'completed': '✔️ مكتمل',
-      'mark_done': 'إنهاء وإكمال الدرس',
-      'mark_undone': 'إلغاء إكمال الدرس',
+      'daily_plan': 'درس يومياً للانتهاء في الموعد 🚀', 'completed': '✔️ مكتمل',
+      'mark_done': 'إنهاء وإكمال الدرس', 'mark_undone': 'إلغاء إكمال الدرس',
       'exam_files': 'أوراق الامتحان',
-      'correction_files': 'أوراق التصحيح',
+      'correction_files': 'أوراق التصحيح 🔒',
       'qcm_section': 'الاختبار التفاعلي (QCM)',
       'start_quiz': 'ابدأ الاختبار التفاعلي',
-      'add_exam': 'إرفاق امتحان',
-      'add_correction': 'إرفاق تصحيح',
-      'add_q': 'إضافة سؤال',
-      'q_text': 'نص السؤال',
-      'correct_opt': 'الجواب الصحيح (1-4)',
-      'score_is': 'نتيجتك هي:',
+      'add_exam': 'إرفاق امتحان', 'add_correction': 'إرفاق تصحيح',
+      'add_q': 'إضافة سؤال', 'q_text': 'نص السؤال',
+      'correct_opt': 'الجواب الصحيح (1-4)', 'score_is': 'نتيجتك هي:',
       'review_mistakes': 'مراجعة الأخطاء:',
-      'correct_ans': 'الجواب الصحيح:',
-      'your_ans': 'إجابتك:',
-      'next_q': 'السؤال التالي',
-      'finish_q': 'إنهاء وتسليم',
-      'success_del': 'تم الحذف بنجاح ✔️',
-      'error_del': 'تعذر الحذف',
-      'open_pdf': 'فتح ملف الـ PDF',
-      'open_img': 'تكبير الصورة',
+      'correct_ans': 'الجواب الصحيح:', 'your_ans': 'إجابتك:',
+      'next_q': 'السؤال التالي', 'finish_q': 'إنهاء وتسليم',
+      'success_del': 'تم الحذف بنجاح ✔️', 'error_del': 'تعذر الحذف',
+      'open_pdf': 'فتح ملف الـ PDF', 'open_img': 'تكبير الصورة',
       'no_files': 'لا توجد ملفات مرفقة حالياً.',
       'no_qcm': 'لا توجد أسئلة تفاعلية بعد.',
       'opt1': 'الخيار 1',
       'opt2': 'الخيار 2',
-      'opt3': 'الخيار 3',
-      'opt4': 'الخيار 4',
-      'quiz_title': 'اختبار',
+      'opt3': 'الخيار 3', 'opt4': 'الخيار 4', 'quiz_title': 'اختبار',
       'exam_setup': 'إعداد الامتحان الوطني',
-      'exam_title': 'عنوان الامتحان',
-      'choose_date': 'اختر التاريخ',
-      'lesson_count': 'عدد الدروس:',
-      'quiz_count': 'عدد الاختبارات:',
-      'uploading': 'جاري الرفع...',
-      'success_upload': 'تم الرفع بنجاح',
+      'exam_title': 'عنوان الامتحان', 'choose_date': 'اختر التاريخ',
+      'lesson_count': 'عدد الدروس:', 'quiz_count': 'عدد الاختبارات:',
+      'uploading': 'جاري الرفع...', 'success_upload': 'تم الرفع بنجاح',
       'ig_error': 'لا يمكن فتح تطبيق إنستغرام',
-      'no_ans': 'لم تجب',
-      'watch_ad': 'مشاهدة إعلان لفتح التصحيح',
+      'no_ans': 'لم تجب', 'watch_ad': 'مشاهدة إعلان لفتح التصحيح',
       'ad_msg': 'ورقة التصحيح مقفلة، يرجى مشاهدة إعلان قصير لفتحها مجاناً.',
       'watch': 'مشاهدة الآن',
+      // ⚠️ نصوص النافذة الذكية للأندرويد
+      'promo_title': 'تطبيق الأندرويد متاح الآن! 🎉',
+      'promo_desc':
+          'للحصول على تجربة أسرع، وإشعارات حصرية، والعمل بدون إنترنت.. قم بتحميل تطبيقنا الرسمي الآن.',
+      'download_app': '📥 تحميل التطبيق',
+      'continue_web': 'إكمال في المتصفح',
     },
     'en': {
       'app_title': 'Jaafari Guide',
@@ -269,7 +244,7 @@ class S {
       'mark_done': 'Complete Lesson',
       'mark_undone': 'Mark Incomplete',
       'exam_files': 'Exam Papers',
-      'correction_files': 'Correction Papers',
+      'correction_files': 'Correction Papers 🔒',
       'qcm_section': 'Interactive Quiz (MCQ)',
       'start_quiz': 'Start Quiz',
       'add_exam': 'Attach Exam',
@@ -307,6 +282,11 @@ class S {
       'ad_msg':
           'Correction paper is locked. Watch a short ad to unlock it for free.',
       'watch': 'Watch Now',
+      'promo_title': 'Android App is Available! 🎉',
+      'promo_desc':
+          'For a faster experience, offline access, and notifications, download our official app now.',
+      'download_app': '📥 Download App',
+      'continue_web': 'Continue in Browser',
     },
     'fr': {
       'app_title': 'Jaafari Guide',
@@ -359,7 +339,7 @@ class S {
       'mark_done': 'Terminer la leçon',
       'mark_undone': 'Annuler',
       'exam_files': 'Sujets d\'examen',
-      'correction_files': 'Corrigés',
+      'correction_files': 'Corrigés 🔒',
       'qcm_section': 'Quiz Interactif (QCM)',
       'start_quiz': 'Commencer le Quiz',
       'add_exam': 'Ajouter Sujet',
@@ -397,6 +377,11 @@ class S {
       'ad_msg':
           'Le corrigé est verrouillé. Regardez une courte pub pour l\'ouvrir.',
       'watch': 'Regarder',
+      'promo_title': 'L\'application Android est disponible! 🎉',
+      'promo_desc':
+          'Pour une expérience plus rapide et un accès hors ligne, téléchargez notre application officielle.',
+      'download_app': '📥 Télécharger l\'App',
+      'continue_web': 'Continuer sur le navigateur',
     }
   };
   static String get(String key) =>
@@ -411,8 +396,12 @@ String currentUserEmailGlobal = '';
 String currentUserNameGlobal = '';
 final supabase = Supabase.instance.client;
 
+// ⚠️ رابط التطبيق الخاص بك على MediaFire أو Google Drive (قم بتغييره برابطك الحقيقي لاحقاً)
+const String APK_DOWNLOAD_LINK =
+    "https://www.mediafire.com/file/your_app_link.apk";
+
 // ==========================================
-// 4. دوال مساعدة (الحذف السريع وعارض الـ PDF)
+// 4. دوال مساعدة وعارض الـ PDF
 // ==========================================
 
 Future<void> quickDelete(BuildContext context, String table, dynamic id) async {
@@ -420,64 +409,59 @@ Future<void> quickDelete(BuildContext context, String table, dynamic id) async {
     await supabase.from(table).delete().eq('id', id);
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(S.get('success_del'),
-            style: const TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.green,
-        duration: const Duration(seconds: 2),
-      ));
+          content: Text(S.get('success_del'),
+              style: const TextStyle(fontWeight: FontWeight.bold)),
+          backgroundColor: Colors.green,
+          duration: const Duration(seconds: 2)));
     }
   } catch (e) {
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('${S.get('error_del')}: $e'),
-        backgroundColor: Colors.red,
-      ));
+          content: Text('${S.get('error_del')}: $e'),
+          backgroundColor: Colors.red));
     }
   }
 }
 
 void showFullScreenImage(BuildContext context, String imageUrl) {
   Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (_) => Scaffold(
-        backgroundColor: Colors.black,
-        appBar: AppBar(
-          backgroundColor: Colors.black,
-          elevation: 0,
-          iconTheme: const IconThemeData(color: Colors.white),
-        ),
-        body: Center(
-          child: InteractiveViewer(
-            panEnabled: true,
-            minScale: 0.5,
-            maxScale: 4.0,
-            child: CachedNetworkImage(
-              imageUrl: imageUrl,
-              fit: BoxFit.contain,
-              placeholder: (context, url) =>
-                  const CircularProgressIndicator(color: Colors.white),
-              errorWidget: (context, url, error) =>
-                  const Icon(Icons.wifi_off, size: 80, color: Colors.white54),
-            ),
-          ),
-        ),
-      ),
-    ),
-  );
+      context,
+      MaterialPageRoute(
+          builder: (_) => Scaffold(
+                backgroundColor: Colors.black,
+                appBar: AppBar(
+                    backgroundColor: Colors.black,
+                    elevation: 0,
+                    iconTheme: const IconThemeData(color: Colors.white)),
+                body: Center(
+                  child: InteractiveViewer(
+                    panEnabled: true,
+                    minScale: 0.5,
+                    maxScale: 4.0,
+                    child: CachedNetworkImage(
+                      imageUrl: imageUrl,
+                      fit: BoxFit.contain,
+                      placeholder: (context, url) =>
+                          const CircularProgressIndicator(color: Colors.white),
+                      errorWidget: (context, url, error) => const Icon(
+                          Icons.wifi_off,
+                          size: 80,
+                          color: Colors.white54),
+                    ),
+                  ),
+                ),
+              )));
 }
 
 class InAppPdfViewer extends StatefulWidget {
   final String pdfUrl;
   final String title;
   final Color color;
-
   const InAppPdfViewer(
       {super.key,
       required this.pdfUrl,
       required this.title,
       required this.color});
-
   @override
   State<InAppPdfViewer> createState() => _InAppPdfViewerState();
 }
@@ -489,25 +473,26 @@ class _InAppPdfViewerState extends State<InAppPdfViewer> {
   @override
   void initState() {
     super.initState();
-    if (!kIsWeb) {
-      _loadPdfMobile();
-    } else {
-      isLoading = false;
-    }
+    _loadPdf();
   }
 
-  void _loadPdfMobile() async {
+  void _loadPdf() async {
     try {
-      final fileInfo =
-          await DefaultCacheManager().getFileFromCache(widget.pdfUrl);
-      if (fileInfo != null) {
-        pdfBytes = await fileInfo.file.readAsBytes();
+      if (kIsWeb) {
+        final response = await http.get(Uri.parse(widget.pdfUrl));
+        if (response.statusCode == 200) pdfBytes = response.bodyBytes;
       } else {
-        File file = await DefaultCacheManager().getSingleFile(widget.pdfUrl);
-        pdfBytes = await file.readAsBytes();
+        final fileInfo =
+            await DefaultCacheManager().getFileFromCache(widget.pdfUrl);
+        if (fileInfo != null) {
+          pdfBytes = await fileInfo.file.readAsBytes();
+        } else {
+          File file = await DefaultCacheManager().getSingleFile(widget.pdfUrl);
+          pdfBytes = await file.readAsBytes();
+        }
       }
     } catch (e) {
-      debugPrint("PDF Offline Error: $e");
+      debugPrint("PDF Load Error: $e");
     }
     if (mounted) setState(() => isLoading = false);
   }
@@ -521,56 +506,38 @@ class _InAppPdfViewerState extends State<InAppPdfViewer> {
         foregroundColor: Colors.white,
         actions: [
           IconButton(
-            icon: const Icon(Icons.download),
-            onPressed: () => launchUrl(Uri.parse(widget.pdfUrl),
-                mode: LaunchMode.externalApplication),
-          )
+              icon: const Icon(Icons.download),
+              onPressed: () => launchUrl(Uri.parse(widget.pdfUrl),
+                  mode: LaunchMode.externalApplication))
         ],
       ),
-      body: kIsWeb ? _buildWebFallback() : _buildMobileViewer(),
-    );
-  }
-
-  Widget _buildMobileViewer() {
-    if (isLoading) return const Center(child: CircularProgressIndicator());
-    if (pdfBytes != null) return SfPdfViewer.memory(pdfBytes!);
-    return _buildWebFallback();
-  }
-
-  Widget _buildWebFallback() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.picture_as_pdf,
-                size: 100, color: widget.color.withOpacity(0.7)),
-            const SizedBox(height: 20),
-            const Text(
-              "لعرض هذا الملف في متصفح الويب، يرجى فتحه أو تحميله مباشرة 📥",
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 30),
-            ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: widget.color,
-                foregroundColor: Colors.white,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(15)),
-              ),
-              icon: const Icon(Icons.open_in_new, size: 28),
-              label: const Text("فتح / تحميل الملف",
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-              onPressed: () => launchUrl(Uri.parse(widget.pdfUrl),
-                  mode: LaunchMode.externalApplication),
-            )
-          ],
-        ),
-      ),
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : pdfBytes != null
+              ? SfPdfViewer.memory(pdfBytes!)
+              : Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.error_outline,
+                          size: 60, color: Colors.red),
+                      const SizedBox(height: 15),
+                      const Text("تعذر عرض الملف، يرجى الضغط على زر التحميل",
+                          style: TextStyle(
+                              fontSize: 16, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 15),
+                      ElevatedButton.icon(
+                        icon: const Icon(Icons.download),
+                        label: const Text("تحميل الملف"),
+                        style: ElevatedButton.styleFrom(
+                            backgroundColor: widget.color,
+                            foregroundColor: Colors.white),
+                        onPressed: () => launchUrl(Uri.parse(widget.pdfUrl),
+                            mode: LaunchMode.externalApplication),
+                      )
+                    ],
+                  ),
+                ),
     );
   }
 }
@@ -585,7 +552,6 @@ void main() async {
 
   String? savedLang = prefs.getString('app_lang');
   if (savedLang != null) localeNotifier.value = Locale(savedLang);
-
   bool? isDark = prefs.getBool('is_dark');
   if (isDark != null && isDark) themeNotifier.value = ThemeMode.dark;
 
@@ -619,18 +585,16 @@ class JaafariGuideApp extends StatelessWidget {
           themeMode: mode,
           title: 'Jaafari Guide',
           theme: ThemeData(
-            useMaterial3: true,
-            colorSchemeSeed: Colors.deepPurple,
-            brightness: Brightness.light,
-            scaffoldBackgroundColor: const Color(0xFFF4F7FA),
-            fontFamily: 'Cairo',
-          ),
+              useMaterial3: true,
+              colorSchemeSeed: Colors.deepPurple,
+              brightness: Brightness.light,
+              scaffoldBackgroundColor: const Color(0xFFF4F7FA),
+              fontFamily: 'Cairo'),
           darkTheme: ThemeData(
-            useMaterial3: true,
-            colorSchemeSeed: Colors.deepPurple,
-            brightness: Brightness.dark,
-            fontFamily: 'Cairo',
-          ),
+              useMaterial3: true,
+              colorSchemeSeed: Colors.deepPurple,
+              brightness: Brightness.dark,
+              fontFamily: 'Cairo'),
           home: const AuthWrapper(),
         ),
       ),
@@ -638,8 +602,97 @@ class JaafariGuideApp extends StatelessWidget {
   }
 }
 
-class AuthWrapper extends StatelessWidget {
+// ==========================================
+// 6. التوجيه (مع النافذة الزجاجية الذكية للويب)
+// ==========================================
+class AuthWrapper extends StatefulWidget {
   const AuthWrapper({super.key});
+  @override
+  State<AuthWrapper> createState() => _AuthWrapperState();
+}
+
+class _AuthWrapperState extends State<AuthWrapper> {
+  @override
+  void initState() {
+    super.initState();
+    // ⚠️ الذكاء الاصطناعي لاكتشاف الأندرويد في الويب وعرض النافذة
+    if (kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _checkAndShowAndroidPopup();
+      });
+    }
+  }
+
+  void _checkAndShowAndroidPopup() {
+    bool hasSeenPopup = prefs.getBool('seen_android_popup') ?? false;
+    if (hasSeenPopup) return; // إذا رآها من قبل لا تزعجه
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Dialog(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          child: Container(
+            padding: const EdgeInsets.all(25),
+            decoration: BoxDecoration(
+              color: Theme.of(context).cardColor.withOpacity(0.9),
+              borderRadius: BorderRadius.circular(30),
+              border:
+                  Border.all(color: Colors.white.withOpacity(0.5), width: 1.5),
+              boxShadow: const [
+                BoxShadow(color: Colors.black26, blurRadius: 20)
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.android, size: 60, color: Colors.green),
+                const SizedBox(height: 20),
+                Text(S.get('promo_title'),
+                    style: const TextStyle(
+                        fontSize: 22, fontWeight: FontWeight.bold),
+                    textAlign: TextAlign.center),
+                const SizedBox(height: 15),
+                Text(S.get('promo_desc'),
+                    style: const TextStyle(fontSize: 16, color: Colors.grey),
+                    textAlign: TextAlign.center),
+                const SizedBox(height: 30),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.deepPurple,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(double.infinity, 50),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(15)),
+                  ),
+                  onPressed: () {
+                    launchUrl(Uri.parse(APK_DOWNLOAD_LINK),
+                        mode: LaunchMode.externalApplication);
+                  },
+                  child: Text(S.get('download_app'),
+                      style: const TextStyle(
+                          fontSize: 18, fontWeight: FontWeight.bold)),
+                ),
+                const SizedBox(height: 10),
+                TextButton(
+                  onPressed: () {
+                    prefs.setBool('seen_android_popup', true);
+                    Navigator.pop(ctx);
+                  },
+                  child: Text(S.get('continue_web'),
+                      style: const TextStyle(fontSize: 16, color: Colors.grey)),
+                )
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<AuthState>(
@@ -685,19 +738,15 @@ class UserDataFetcher extends StatelessWidget {
         if (snapshot.connectionState == ConnectionState.waiting)
           return const Scaffold(
               body: Center(child: CircularProgressIndicator()));
-
         currentUserEmailGlobal = supabase.auth.currentUser?.email ?? '';
         isTeacherGlobal = (currentUserEmailGlobal.toLowerCase() ==
             'bilal38jaafari@gmail.com');
-
         currentUserNameGlobal = "";
         if (snapshot.hasData && snapshot.data != null) {
           var data = snapshot.data!;
-          String fName = data['firstName'] ?? '';
-          String lName = data['lastName'] ?? '';
-          currentUserNameGlobal = "$fName $lName".trim();
+          currentUserNameGlobal =
+              "${data['firstName'] ?? ''} ${data['lastName'] ?? ''}".trim();
         }
-
         return const MainNavigation();
       },
     );
@@ -705,7 +754,7 @@ class UserDataFetcher extends StatelessWidget {
 }
 
 // ==========================================
-// 6. واجهة تسجيل الدخول
+// 7. واجهة تسجيل الدخول
 // ==========================================
 class AppleGlassLoginScreen extends StatefulWidget {
   const AppleGlassLoginScreen({super.key});
@@ -741,7 +790,7 @@ class _AppleGlassLoginScreenState extends State<AppleGlassLoginScreen> {
             'lastName': _lastNameCtrl.text.trim(),
             'role': 'تلميذ',
             'email': _emailCtrl.text.trim(),
-            'createdAt': DateTime.now().toIso8601String(),
+            'createdAt': DateTime.now().toIso8601String()
           });
         }
       } else {
@@ -760,18 +809,12 @@ class _AppleGlassLoginScreenState extends State<AppleGlassLoginScreen> {
       body: Stack(
         children: [
           Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Color(0xFF0F2027),
-                  Color(0xFF203A43),
-                  Color(0xFF2C5364)
-                ],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-              ),
-            ),
-          ),
+              decoration: const BoxDecoration(
+                  gradient: LinearGradient(colors: [
+            Color(0xFF0F2027),
+            Color(0xFF203A43),
+            Color(0xFF2C5364)
+          ], begin: Alignment.topCenter, end: Alignment.bottomCenter))),
           Positioned(
               top: -50,
               left: -50,
@@ -794,10 +837,10 @@ class _AppleGlassLoginScreenState extends State<AppleGlassLoginScreen> {
                     width: 350,
                     padding: const EdgeInsets.all(30),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(30),
-                      border: Border.all(color: Colors.white.withOpacity(0.2)),
-                    ),
+                        color: Colors.white.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(30),
+                        border:
+                            Border.all(color: Colors.white.withOpacity(0.2))),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -810,18 +853,16 @@ class _AppleGlassLoginScreenState extends State<AppleGlassLoginScreen> {
                                 color: Colors.white)),
                         const SizedBox(height: 30),
                         if (isRegistering) ...[
-                          Row(
-                            children: [
-                              Expanded(
-                                  child: _buildGlassField(_firstNameCtrl,
-                                      S.get('first_name'), Icons.person)),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                  child: _buildGlassField(_lastNameCtrl,
-                                      S.get('last_name'), Icons.person_outline))
-                            ],
-                          ),
-                          const SizedBox(height: 15),
+                          Row(children: [
+                            Expanded(
+                                child: _buildGlassField(_firstNameCtrl,
+                                    S.get('first_name'), Icons.person)),
+                            const SizedBox(width: 10),
+                            Expanded(
+                                child: _buildGlassField(_lastNameCtrl,
+                                    S.get('last_name'), Icons.person_outline))
+                          ]),
+                          const SizedBox(height: 15)
                         ],
                         _buildGlassField(
                             _emailCtrl, S.get('email'), Icons.email),
@@ -840,11 +881,11 @@ class _AppleGlassLoginScreenState extends State<AppleGlassLoginScreen> {
                                 color: Colors.white)
                             : ElevatedButton(
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor:
-                                      Colors.white.withOpacity(0.2),
-                                  foregroundColor: Colors.white,
-                                  minimumSize: const Size(double.infinity, 55),
-                                ),
+                                    backgroundColor:
+                                        Colors.white.withOpacity(0.2),
+                                    foregroundColor: Colors.white,
+                                    minimumSize:
+                                        const Size(double.infinity, 55)),
                                 onPressed: _submit,
                                 child: Text(
                                     isRegistering
@@ -852,17 +893,15 @@ class _AppleGlassLoginScreenState extends State<AppleGlassLoginScreen> {
                                         : S.get('login'),
                                     style: const TextStyle(
                                         fontSize: 18,
-                                        fontWeight: FontWeight.bold)),
-                              ),
+                                        fontWeight: FontWeight.bold))),
                         TextButton(
-                          onPressed: () =>
-                              setState(() => isRegistering = !isRegistering),
-                          child: Text(
-                              isRegistering
-                                  ? S.get('have_acc')
-                                  : S.get('no_acc'),
-                              style: const TextStyle(color: Colors.white70)),
-                        ),
+                            onPressed: () =>
+                                setState(() => isRegistering = !isRegistering),
+                            child: Text(
+                                isRegistering
+                                    ? S.get('have_acc')
+                                    : S.get('no_acc'),
+                                style: const TextStyle(color: Colors.white70))),
                       ],
                     ),
                   ),
@@ -879,25 +918,23 @@ class _AppleGlassLoginScreenState extends State<AppleGlassLoginScreen> {
       TextEditingController ctrl, String hint, IconData icon,
       {bool obscure = false}) {
     return TextField(
-      controller: ctrl,
-      obscureText: obscure,
-      style: const TextStyle(color: Colors.white),
-      decoration: InputDecoration(
-        hintText: hint,
-        hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
-        filled: true,
-        fillColor: Colors.white.withOpacity(0.1),
-        prefixIcon: Icon(icon, color: Colors.white70),
-        border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(20),
-            borderSide: BorderSide.none),
-      ),
-    );
+        controller: ctrl,
+        obscureText: obscure,
+        style: const TextStyle(color: Colors.white),
+        decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
+            filled: true,
+            fillColor: Colors.white.withOpacity(0.1),
+            prefixIcon: Icon(icon, color: Colors.white70),
+            border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(20),
+                borderSide: BorderSide.none)));
   }
 }
 
 // ==========================================
-// 7. التنقل الرئيسي وإعلانات البانر
+// 8. التنقل الرئيسي (إضافة Banner Ad بذكاء)
 // ==========================================
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
@@ -938,52 +975,52 @@ class _MainNavigationState extends State<MainNavigation> {
   @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder<Locale>(
-      valueListenable: localeNotifier,
-      builder: (context, locale, child) {
-        return Scaffold(
-          body: Column(
-            children: [
-              Expanded(
-                child: IndexedStack(
-                  key: ValueKey(locale.languageCode),
-                  index: _currentIndex,
-                  children: [
-                    LessonsGridPage(
-                        key: ValueKey('home_${locale.languageCode}')),
-                    QuizzesGridPage(
-                        key: ValueKey('quiz_${locale.languageCode}')),
-                    ProfilePage(key: ValueKey('prof_${locale.languageCode}'))
-                  ],
+        valueListenable: localeNotifier,
+        builder: (context, locale, child) {
+          return Scaffold(
+            body: Column(
+              children: [
+                Expanded(
+                  child: IndexedStack(
+                    key: ValueKey(locale.languageCode),
+                    index: _currentIndex,
+                    children: [
+                      LessonsGridPage(
+                          key: ValueKey('home_${locale.languageCode}')),
+                      QuizzesGridPage(
+                          key: ValueKey('quiz_${locale.languageCode}')),
+                      ProfilePage(key: ValueKey('prof_${locale.languageCode}'))
+                    ],
+                  ),
                 ),
-              ),
-              if (_isBannerAdReady && _bannerAd != null && !kIsWeb)
-                Container(
-                  alignment: Alignment.center,
-                  width: _bannerAd!.size.width.toDouble(),
-                  height: _bannerAd!.size.height.toDouble(),
-                  child: AdWidget(ad: _bannerAd!),
-                ),
-            ],
-          ),
-          bottomNavigationBar: NavigationBar(
-            selectedIndex: _currentIndex,
-            onDestinationSelected: (i) => setState(() => _currentIndex = i),
-            destinations: [
-              NavigationDestination(
-                  icon: const Icon(Icons.book), label: S.get('lessons')),
-              NavigationDestination(
-                  icon: const Icon(Icons.quiz), label: S.get('quizzes')),
-              NavigationDestination(
-                  icon: const Icon(Icons.person), label: S.get('profile')),
-            ],
-          ),
-        );
-      },
-    );
+                // ⚠️ إعلان البانر للهاتف فقط ويأخذ مكانه بدون إخفاء الأزرار
+                if (_isBannerAdReady && _bannerAd != null && !kIsWeb)
+                  Container(
+                    alignment: Alignment.center,
+                    width: _bannerAd!.size.width.toDouble(),
+                    height: _bannerAd!.size.height.toDouble(),
+                    child: AdWidget(ad: _bannerAd!),
+                  ),
+              ],
+            ),
+            bottomNavigationBar: NavigationBar(
+              selectedIndex: _currentIndex,
+              onDestinationSelected: (i) => setState(() => _currentIndex = i),
+              destinations: [
+                NavigationDestination(
+                    icon: const Icon(Icons.book), label: S.get('lessons')),
+                NavigationDestination(
+                    icon: const Icon(Icons.quiz), label: S.get('quizzes')),
+                NavigationDestination(
+                    icon: const Icon(Icons.person), label: S.get('profile')),
+              ],
+            ),
+          );
+        });
   }
 }
 
-// ⚠️ المواد الأساسية فقط
+// ⚠️ تقليص المواد الدراسية إلى 5 مواد رئيسية فقط
 class SubjectData {
   final String id, nameKey;
   final IconData icon;
@@ -1000,7 +1037,7 @@ final List<SubjectData> appSubjects = [
 ];
 
 // ==========================================
-// 8. الواجهة الرئيسية والعداد
+// 9. الواجهة الرئيسية والعداد
 // ==========================================
 class LessonsGridPage extends StatefulWidget {
   const LessonsGridPage({super.key});
@@ -1019,9 +1056,8 @@ class _LessonsGridPageState extends State<LessonsGridPage> {
     super.initState();
     _fetchExamConfig();
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (examDate != null) {
+      if (examDate != null)
         setState(() => remainingTime = examDate!.difference(DateTime.now()));
-      }
     });
   }
 
@@ -1033,109 +1069,114 @@ class _LessonsGridPageState extends State<LessonsGridPage> {
 
   Future<void> _fetchExamConfig() async {
     try {
-      final res = await supabase
+      final resConfig = await supabase
           .from('subject_config')
-          .select()
+          .select('lesson_count')
           .eq('id', 'national_exam_config')
           .maybeSingle();
-      if (mounted && res != null) {
+      final resMeta = await supabase
+          .from('lesson_metadata')
+          .select('custom_title')
+          .eq('id', 'national_exam_config')
+          .maybeSingle();
+      if (mounted) {
         setState(() {
-          examTitle = res['custom_title'] ?? "";
-          if (res['lesson_count'] != null) {
-            examDate = DateTime.fromMillisecondsSinceEpoch(res['lesson_count']);
-          }
+          if (resMeta != null && resMeta['custom_title'] != null)
+            examTitle = resMeta['custom_title'];
+          if (resConfig != null && resConfig['lesson_count'] != null)
+            examDate =
+                DateTime.fromMillisecondsSinceEpoch(resConfig['lesson_count']);
         });
       }
-    } catch (e) {
-      debugPrint("Error fetching exam: $e");
-    }
+    } catch (_) {}
   }
 
   void _setExamConfig() {
     final titleCtrl = TextEditingController(text: examTitle);
     DateTime? tempDate = examDate;
-
     showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (c) => StatefulBuilder(
-        builder: (ctx, setDialogState) {
-          bool isSaving = false;
-          return AlertDialog(
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            title: Text(S.get('exam_setup'),
-                style: const TextStyle(fontWeight: FontWeight.bold)),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                    controller: titleCtrl,
-                    decoration:
-                        InputDecoration(labelText: S.get('exam_title'))),
-                const SizedBox(height: 20),
-                ElevatedButton.icon(
-                  icon: const Icon(Icons.calendar_month),
-                  label: Text(tempDate == null
-                      ? S.get('choose_date')
-                      : DateFormat('yyyy-MM-dd').format(tempDate!)),
-                  style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blueAccent,
-                      foregroundColor: Colors.white),
-                  onPressed: () async {
-                    DateTime? picked = await showDatePicker(
-                        context: context,
-                        initialDate: tempDate ?? DateTime.now(),
-                        firstDate: DateTime.now(),
-                        lastDate: DateTime(2030));
-                    if (picked != null) setDialogState(() => tempDate = picked);
-                  },
-                )
-              ],
-            ),
-            actions: [
-              TextButton(
-                  onPressed: isSaving ? null : () => Navigator.pop(c),
-                  child: Text(S.get('cancel'),
-                      style: const TextStyle(color: Colors.red))),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    foregroundColor: Colors.white),
-                onPressed: isSaving
-                    ? null
-                    : () async {
-                        if (tempDate != null) {
-                          setDialogState(() => isSaving = true);
-                          try {
-                            await supabase.from('subject_config').upsert({
-                              'id': 'national_exam_config',
-                              'lesson_count': tempDate!.millisecondsSinceEpoch,
-                              'custom_title': titleCtrl.text.trim()
-                            });
-                            _fetchExamConfig();
-                            if (mounted) Navigator.pop(c);
-                          } catch (e) {
-                            setDialogState(() => isSaving = false);
-                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                                content: Text("Error: $e"),
-                                backgroundColor: Colors.red));
-                          }
-                        }
-                      },
-                child: isSaving
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                            color: Colors.white, strokeWidth: 2))
-                    : Text(S.get('save')),
-              )
-            ],
-          );
-        },
-      ),
-    );
+        context: context,
+        barrierDismissible: false,
+        builder: (c) => StatefulBuilder(builder: (ctx, setD) {
+              bool isSaving = false;
+              return AlertDialog(
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20)),
+                title: Text(S.get('exam_setup'),
+                    style: const TextStyle(fontWeight: FontWeight.bold)),
+                content: Column(mainAxisSize: MainAxisSize.min, children: [
+                  TextField(
+                      controller: titleCtrl,
+                      decoration:
+                          InputDecoration(labelText: S.get('exam_title'))),
+                  const SizedBox(height: 20),
+                  ElevatedButton.icon(
+                      icon: const Icon(Icons.calendar_month),
+                      label: Text(tempDate == null
+                          ? S.get('choose_date')
+                          : DateFormat('yyyy-MM-dd').format(tempDate!)),
+                      style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blueAccent,
+                          foregroundColor: Colors.white),
+                      onPressed: () async {
+                        DateTime? picked = await showDatePicker(
+                            context: context,
+                            initialDate: tempDate ?? DateTime.now(),
+                            firstDate: DateTime.now(),
+                            lastDate: DateTime(2030));
+                        if (picked != null) setD(() => tempDate = picked);
+                      })
+                ]),
+                actions: [
+                  TextButton(
+                      onPressed: isSaving ? null : () => Navigator.pop(c),
+                      child: Text(S.get('cancel'),
+                          style: const TextStyle(color: Colors.red))),
+                  ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          foregroundColor: Colors.white),
+                      onPressed: isSaving
+                          ? null
+                          : () async {
+                              if (tempDate != null) {
+                                setD(() => isSaving = true);
+                                try {
+                                  await supabase.from('subject_config').upsert({
+                                    'id': 'national_exam_config',
+                                    'lesson_count':
+                                        tempDate!.millisecondsSinceEpoch
+                                  });
+                                  await supabase
+                                      .from('lesson_metadata')
+                                      .upsert({
+                                    'id': 'national_exam_config',
+                                    'subjectId': 'global',
+                                    'custom_title': titleCtrl.text.isEmpty
+                                        ? S.get('exam_countdown')
+                                        : titleCtrl.text
+                                  });
+                                  _fetchExamConfig();
+                                  if (mounted) Navigator.pop(c);
+                                } catch (e) {
+                                  setD(() => isSaving = false);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                          content: Text("Error: $e"),
+                                          backgroundColor: Colors.red));
+                                }
+                              }
+                            },
+                      child: isSaving
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                  color: Colors.white, strokeWidth: 2))
+                          : Text(S.get('save')))
+                ],
+              );
+            }));
   }
 
   @override
@@ -1143,7 +1184,6 @@ class _LessonsGridPageState extends State<LessonsGridPage> {
     String displayName = currentUserNameGlobal.isNotEmpty
         ? currentUserNameGlobal
         : (isTeacherGlobal ? S.get('teacher') : S.get('student'));
-
     return Scaffold(
       appBar: AppBar(
           title: Text(S.get('app_title'),
@@ -1158,50 +1198,43 @@ class _LessonsGridPageState extends State<LessonsGridPage> {
                 const EdgeInsets.only(top: 15, left: 15, right: 15, bottom: 20),
             padding: const EdgeInsets.all(25),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF2B5876), Color(0xFF4E4376)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(30),
-              boxShadow: [
-                BoxShadow(
-                    color: const Color(0xFF4E4376).withOpacity(0.4),
-                    blurRadius: 20,
-                    offset: const Offset(0, 10))
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+                gradient: const LinearGradient(
+                    colors: [Color(0xFF2B5876), Color(0xFF4E4376)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight),
+                borderRadius: BorderRadius.circular(30),
+                boxShadow: [
+                  BoxShadow(
+                      color: const Color(0xFF4E4376).withOpacity(0.4),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10))
+                ]),
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                Expanded(
+                    child: Text("${S.get('welcome')} $displayName 👋",
+                        style: const TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white))),
+                if (isTeacherGlobal)
+                  IconButton(
+                      icon: const Icon(Icons.settings, color: Colors.white),
+                      onPressed: _setExamConfig)
+              ]),
+              const SizedBox(height: 20),
+              Text(examTitle.isEmpty ? S.get('exam_countdown') : examTitle,
+                  style: const TextStyle(color: Colors.white70, fontSize: 16)),
+              const SizedBox(height: 15),
+              if (examDate == null)
+                Text(S.get('not_set'),
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16))
+              else
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                        child: Text("${S.get('welcome')} $displayName 👋",
-                            style: const TextStyle(
-                                fontSize: 22,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white))),
-                    if (isTeacherGlobal)
-                      IconButton(
-                          icon: const Icon(Icons.settings, color: Colors.white),
-                          onPressed: _setExamConfig),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                Text(examTitle.isEmpty ? S.get('exam_countdown') : examTitle,
-                    style:
-                        const TextStyle(color: Colors.white70, fontSize: 16)),
-                const SizedBox(height: 15),
-                if (examDate == null)
-                  Text(S.get('not_set'),
-                      style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16))
-                else
-                  Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
                       _timeBox(remainingTime.inDays.toString(), S.get('days')),
@@ -1210,30 +1243,26 @@ class _LessonsGridPageState extends State<LessonsGridPage> {
                       _timeBox((remainingTime.inMinutes % 60).toString(),
                           S.get('minutes')),
                       _timeBox((remainingTime.inSeconds % 60).toString(),
-                          S.get('seconds')),
-                    ],
-                  )
-              ],
-            ),
+                          S.get('seconds'))
+                    ])
+            ]),
           ),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Text(S.get('subjects'),
-                style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.grey)),
-          ),
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Text(S.get('subjects'),
+                  style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey))),
           GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 15,
-              mainAxisSpacing: 15,
-              childAspectRatio: 1.05,
-            ),
+                crossAxisCount: 2,
+                crossAxisSpacing: 15,
+                mainAxisSpacing: 15,
+                childAspectRatio: 1.05),
             itemCount: appSubjects.length,
             itemBuilder: (ctx, i) => InkWell(
               onTap: () => Navigator.push(
@@ -1242,37 +1271,31 @@ class _LessonsGridPageState extends State<LessonsGridPage> {
                       builder: (c) =>
                           SubjectLessonsPage(subject: appSubjects[i]))),
               child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      appSubjects[i].color,
-                      appSubjects[i].color.withOpacity(0.7)
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(25),
-                  boxShadow: [
-                    BoxShadow(
-                        color: appSubjects[i].color.withOpacity(0.4),
-                        blurRadius: 8,
-                        offset: const Offset(0, 4))
-                  ],
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(appSubjects[i].icon, size: 50, color: Colors.white),
-                    const SizedBox(height: 15),
-                    Text(S.get(appSubjects[i].nameKey),
-                        style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 18),
-                        textAlign: TextAlign.center)
-                  ],
-                ),
-              ),
+                  decoration: BoxDecoration(
+                      gradient: LinearGradient(colors: [
+                        appSubjects[i].color,
+                        appSubjects[i].color.withOpacity(0.7)
+                      ], begin: Alignment.topLeft, end: Alignment.bottomRight),
+                      borderRadius: BorderRadius.circular(25),
+                      boxShadow: [
+                        BoxShadow(
+                            color: appSubjects[i].color.withOpacity(0.4),
+                            blurRadius: 8,
+                            offset: const Offset(0, 4))
+                      ]),
+                  child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(appSubjects[i].icon,
+                            size: 50, color: Colors.white),
+                        const SizedBox(height: 15),
+                        Text(S.get(appSubjects[i].nameKey),
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18),
+                            textAlign: TextAlign.center)
+                      ])),
             ),
           ),
           const SizedBox(height: 20),
@@ -1282,41 +1305,37 @@ class _LessonsGridPageState extends State<LessonsGridPage> {
   }
 
   Widget _timeBox(String value, String label) {
-    return Column(
-      children: [
-        Container(
+    return Column(children: [
+      Container(
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.2),
-            borderRadius: BorderRadius.circular(15),
-            border:
-                Border.all(color: Colors.white.withOpacity(0.5), width: 1.5),
-            boxShadow: const [
-              BoxShadow(
-                  color: Colors.black12, blurRadius: 8, offset: Offset(0, 4))
-            ],
-          ),
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(15),
+              border:
+                  Border.all(color: Colors.white.withOpacity(0.5), width: 1.5),
+              boxShadow: const [
+                BoxShadow(
+                    color: Colors.black12, blurRadius: 8, offset: Offset(0, 4))
+              ]),
           child: Text(value.padLeft(2, '0'),
               style: const TextStyle(
                   fontSize: 26,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
-                  letterSpacing: 1.5)),
-        ),
-        const SizedBox(height: 8),
-        Text(label,
-            style: const TextStyle(
-                color: Colors.white,
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                shadows: [Shadow(color: Colors.black45, blurRadius: 2)])),
-      ],
-    );
+                  letterSpacing: 1.5))),
+      const SizedBox(height: 8),
+      Text(label,
+          style: const TextStyle(
+              color: Colors.white,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              shadows: [Shadow(color: Colors.black45, blurRadius: 2)]))
+    ]);
   }
 }
 
 // ==========================================
-// 9. الدروس والخطة والأدوات
+// 10. صفحة الدروس والخطة (لـ 5 مواد أساسية)
 // ==========================================
 class SubjectLessonsPage extends StatefulWidget {
   final SubjectData subject;
@@ -1364,39 +1383,37 @@ class _SubjectLessonsPageState extends State<SubjectLessonsPage> {
   void _editTitleDialog(String lessonId, String currentTitle) {
     final ctrl = TextEditingController(text: currentTitle);
     showDialog(
-      context: context,
-      builder: (c) => AlertDialog(
-        title: Text(S.get('edit_title')),
-        content: TextField(
-            controller: ctrl,
-            decoration: InputDecoration(labelText: S.get('new_title'))),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(c), child: Text(S.get('cancel'))),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-                backgroundColor: widget.subject.color,
-                foregroundColor: Colors.white),
-            onPressed: () async {
-              if (ctrl.text.isNotEmpty) {
-                try {
-                  await supabase.from('lesson_metadata').upsert({
-                    'id': lessonId,
-                    'subjectId': widget.subject.id,
-                    'custom_title': ctrl.text
-                  });
-                } catch (e) {
-                  ScaffoldMessenger.of(context)
-                      .showSnackBar(SnackBar(content: Text('Error: $e')));
-                }
-              }
-              if (mounted) Navigator.pop(context);
-            },
-            child: Text(S.get('save')),
-          ),
-        ],
-      ),
-    );
+        context: context,
+        builder: (c) => AlertDialog(
+                title: Text(S.get('edit_title')),
+                content: TextField(
+                    controller: ctrl,
+                    decoration: InputDecoration(labelText: S.get('new_title'))),
+                actions: [
+                  TextButton(
+                      onPressed: () => Navigator.pop(c),
+                      child: Text(S.get('cancel'))),
+                  ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                          backgroundColor: widget.subject.color,
+                          foregroundColor: Colors.white),
+                      onPressed: () async {
+                        if (ctrl.text.isNotEmpty) {
+                          try {
+                            await supabase.from('lesson_metadata').upsert({
+                              'id': lessonId,
+                              'subjectId': widget.subject.id,
+                              'custom_title': ctrl.text
+                            });
+                          } catch (e) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Error: $e')));
+                          }
+                        }
+                        if (mounted) Navigator.pop(context);
+                      },
+                      child: Text(S.get('save')))
+                ]));
   }
 
   double _calculateDailyLessons(int totalLessons) {
@@ -1412,19 +1429,16 @@ class _SubjectLessonsPageState extends State<SubjectLessonsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(S.get(widget.subject.nameKey)),
-        backgroundColor: widget.subject.color,
-        foregroundColor: Colors.white,
-      ),
+          title: Text(S.get(widget.subject.nameKey)),
+          backgroundColor: widget.subject.color,
+          foregroundColor: Colors.white),
       body: StreamBuilder<List<Map<String, dynamic>>>(
         stream: supabase
             .from('subject_config')
             .stream(primaryKey: ['id']).eq('id', widget.subject.id),
         builder: (context, configSnap) {
-          if (configSnap.hasData && configSnap.data!.isNotEmpty) {
+          if (configSnap.hasData && configSnap.data!.isNotEmpty)
             currentLessonCount = configSnap.data!.first['lesson_count'] ?? 15;
-          }
-
           return StreamBuilder<List<Map<String, dynamic>>>(
             stream: supabase
                 .from('lesson_metadata')
@@ -1437,159 +1451,148 @@ class _SubjectLessonsPageState extends State<SubjectLessonsPage> {
               } else {
                 metaDataList = CacheManager.load('meta_${widget.subject.id}');
               }
-
               Map<String, String> customTitles = {};
               for (var row in metaDataList) {
-                if (row.containsKey('custom_title')) {
+                if (row.containsKey('custom_title'))
                   customTitles[row['id']] = row['custom_title'];
-                }
               }
-
               double dailyRequired = _calculateDailyLessons(currentLessonCount);
-
               return Column(
                 children: [
                   if (!isTeacherGlobal)
                     Container(
-                      margin: const EdgeInsets.all(15),
-                      padding: const EdgeInsets.all(15),
-                      decoration: BoxDecoration(
-                        color: widget.subject.color.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(15),
-                        border: Border.all(color: widget.subject.color),
-                      ),
-                      child: Row(
-                        children: [
+                        margin: const EdgeInsets.all(15),
+                        padding: const EdgeInsets.all(15),
+                        decoration: BoxDecoration(
+                            color: widget.subject.color.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(15),
+                            border: Border.all(color: widget.subject.color)),
+                        child: Row(children: [
                           Icon(Icons.timeline,
                               color: widget.subject.color, size: 40),
                           const SizedBox(width: 15),
                           Expanded(
-                            child: targetDate != null
-                                ? Text(
-                                    "${S.get('plan_goal')}\n${dailyRequired.toStringAsFixed(1)} ${S.get('daily_plan')}",
-                                    style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 14))
-                                : Text(S.get('set_plan'),
-                                    style: const TextStyle(
-                                        fontWeight: FontWeight.bold)),
-                          ),
+                              child: targetDate != null
+                                  ? Text(
+                                      "${S.get('plan_goal')}\n${dailyRequired.toStringAsFixed(1)} ${S.get('daily_plan')}",
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14))
+                                  : Text(S.get('set_plan'),
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.bold))),
                           IconButton(
                               icon: Icon(Icons.calendar_month,
                                   color: widget.subject.color),
                               onPressed: _setPlannerDialog)
-                        ],
-                      ),
-                    ),
+                        ])),
                   Expanded(
                     child: ListView.builder(
                       padding: const EdgeInsets.all(15),
                       itemCount: currentLessonCount,
                       itemBuilder: (ctx, index) {
-                        int lessonNum = index + 1;
                         String lessonId =
-                            "${widget.subject.id}_lesson_$lessonNum";
+                            "${widget.subject.id}_lesson_${index + 1}";
                         String displayTitle = customTitles[lessonId] ??
-                            "${S.get('lesson')} $lessonNum";
+                            "${S.get('lesson')} ${index + 1}";
                         bool isCompleted = completedLessons.contains(lessonId);
-
                         return Card(
-                          elevation: 0,
-                          margin: const EdgeInsets.only(bottom: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(15),
-                            side: BorderSide(
-                              color: isCompleted
-                                  ? Colors.green
-                                  : Colors.grey.withOpacity(0.3),
-                              width: isCompleted ? 2 : 1,
-                            ),
-                          ),
-                          child: ListTile(
-                            leading: CircleAvatar(
-                              backgroundColor: isCompleted
-                                  ? Colors.green
-                                  : widget.subject.color.withOpacity(0.2),
-                              child: Icon(
-                                  isCompleted ? Icons.check : Icons.book,
-                                  color: isCompleted
-                                      ? Colors.white
-                                      : widget.subject.color),
-                            ),
-                            title: Text(displayTitle,
-                                style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    decoration: isCompleted
-                                        ? TextDecoration.lineThrough
-                                        : null)),
-                            trailing: isTeacherGlobal
-                                ? IconButton(
-                                    icon: const Icon(Icons.edit,
-                                        color: Colors.blueGrey),
-                                    onPressed: () => _editTitleDialog(
-                                        lessonId, displayTitle))
-                                : const Icon(Icons.arrow_forward_ios, size: 16),
-                            onTap: () async {
-                              await Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (_) => LessonContentPage(
-                                          lessonId: lessonId,
-                                          title: displayTitle,
-                                          color: widget.subject.color,
-                                          subjectId: widget.subject.id)));
-                              _loadPlanner();
-                            },
-                          ),
-                        );
+                            elevation: 0,
+                            margin: const EdgeInsets.only(bottom: 12),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(15),
+                                side: BorderSide(
+                                    color: isCompleted
+                                        ? Colors.green
+                                        : Colors.grey.withOpacity(0.3),
+                                    width: isCompleted ? 2 : 1)),
+                            child: ListTile(
+                                leading: CircleAvatar(
+                                    backgroundColor: isCompleted
+                                        ? Colors.green
+                                        : widget.subject.color.withOpacity(0.2),
+                                    child: Icon(
+                                        isCompleted ? Icons.check : Icons.book,
+                                        color: isCompleted
+                                            ? Colors.white
+                                            : widget.subject.color)),
+                                title: Text(displayTitle,
+                                    style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        decoration: isCompleted
+                                            ? TextDecoration.lineThrough
+                                            : null)),
+                                trailing: isTeacherGlobal
+                                    ? IconButton(
+                                        icon: const Icon(Icons.edit,
+                                            color: Colors.blueGrey),
+                                        onPressed: () => _editTitleDialog(
+                                            lessonId, displayTitle))
+                                    : const Icon(Icons.arrow_forward_ios,
+                                        size: 16),
+                                onTap: () async {
+                                  await Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                          builder: (_) => LessonContentPage(
+                                              lessonId: lessonId,
+                                              title: displayTitle,
+                                              color: widget.subject.color,
+                                              subjectId: widget.subject.id)));
+                                  _loadPlanner();
+                                }));
                       },
                     ),
                   ),
                   if (isTeacherGlobal)
                     Container(
-                      color: Colors.white,
-                      padding: const EdgeInsets.all(10),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.remove_circle,
-                                color: Colors.red, size: 35),
-                            onPressed: () async {
-                              if (currentLessonCount > 1) {
-                                try {
-                                  await supabase.from('subject_config').upsert({
-                                    'id': widget.subject.id,
-                                    'lesson_count': currentLessonCount - 1
-                                  });
-                                } catch (e) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(content: Text('Error: $e')));
-                                }
-                              }
-                            },
-                          ),
-                          Text("${S.get('lesson_count')} $currentLessonCount",
-                              style: const TextStyle(
-                                  fontWeight: FontWeight.bold, fontSize: 18)),
-                          IconButton(
-                            icon: const Icon(Icons.add_circle,
-                                color: Colors.green, size: 35),
-                            onPressed: () async {
-                              try {
-                                await supabase.from('subject_config').upsert({
-                                  'id': widget.subject.id,
-                                  'lesson_count': currentLessonCount + 1
-                                });
-                              } catch (e) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text('Error: $e')));
-                              }
-                            },
-                          ),
-                        ],
-                      ),
-                    )
+                        color: Colors.white,
+                        padding: const EdgeInsets.all(10),
+                        child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              IconButton(
+                                  icon: const Icon(Icons.remove_circle,
+                                      color: Colors.red, size: 35),
+                                  onPressed: () async {
+                                    if (currentLessonCount > 1) {
+                                      try {
+                                        await supabase
+                                            .from('subject_config')
+                                            .upsert({
+                                          'id': widget.subject.id,
+                                          'lesson_count': currentLessonCount - 1
+                                        });
+                                      } catch (e) {
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(SnackBar(
+                                                content: Text('Error: $e')));
+                                      }
+                                    }
+                                  }),
+                              Text(
+                                  "${S.get('lesson_count')} $currentLessonCount",
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 18)),
+                              IconButton(
+                                  icon: const Icon(Icons.add_circle,
+                                      color: Colors.green, size: 35),
+                                  onPressed: () async {
+                                    try {
+                                      await supabase
+                                          .from('subject_config')
+                                          .upsert({
+                                        'id': widget.subject.id,
+                                        'lesson_count': currentLessonCount + 1
+                                      });
+                                    } catch (e) {
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(SnackBar(
+                                              content: Text('Error: $e')));
+                                    }
+                                  })
+                            ]))
                 ],
               );
             },
@@ -1601,7 +1604,7 @@ class _SubjectLessonsPageState extends State<SubjectLessonsPage> {
 }
 
 // ==========================================
-// 10. محتوى الدرس
+// 11. محتوى الدرس (مع إعلان البيني الآمن للهاتف فقط)
 // ==========================================
 class LessonContentPage extends StatefulWidget {
   final String lessonId, title, subjectId;
@@ -1623,12 +1626,13 @@ class _LessonContentPageState extends State<LessonContentPage> {
   @override
   void initState() {
     super.initState();
-    List<String> comp = prefs.getStringList(
-            'completed_${supabase.auth.currentUser?.id}_${widget.subjectId}') ??
-        [];
-    isCompleted = comp.contains(widget.lessonId);
+    isCompleted = (prefs.getStringList(
+                'completed_${supabase.auth.currentUser?.id}_${widget.subjectId}') ??
+            [])
+        .contains(widget.lessonId);
   }
 
+  // ⚠️ إظهار الإعلان عند الخروج من الدرس إذا مرت 5 دقائق
   @override
   void dispose() {
     AdManager.checkAndShowTimerAd();
@@ -1639,11 +1643,10 @@ class _LessonContentPageState extends State<LessonContentPage> {
     List<String> comp = prefs.getStringList(
             'completed_${supabase.auth.currentUser?.id}_${widget.subjectId}') ??
         [];
-    if (isCompleted) {
+    if (isCompleted)
       comp.remove(widget.lessonId);
-    } else {
+    else
       comp.add(widget.lessonId);
-    }
     prefs.setStringList(
         'completed_${supabase.auth.currentUser?.id}_${widget.subjectId}', comp);
     setState(() => isCompleted = !isCompleted);
@@ -1658,19 +1661,16 @@ class _LessonContentPageState extends State<LessonContentPage> {
       setState(() => isUploading = true);
       try {
         String ext = result.files.single.extension ?? 'file';
-        String safeName = "${DateTime.now().millisecondsSinceEpoch}_doc.$ext";
-        String path = 'lesson_files/${widget.lessonId}/$safeName';
-
-        if (kIsWeb) {
+        String path =
+            'lesson_files/${widget.lessonId}/${DateTime.now().millisecondsSinceEpoch}.$ext';
+        if (kIsWeb)
           await supabase.storage
               .from('jaafari_storage')
               .uploadBinary(path, result.files.single.bytes!);
-        } else {
+        else
           await supabase.storage
               .from('jaafari_storage')
               .upload(path, File(result.files.single.path!));
-        }
-
         String url =
             supabase.storage.from('jaafari_storage').getPublicUrl(path);
         setState(() => isUploading = false);
@@ -1686,10 +1686,9 @@ class _LessonContentPageState extends State<LessonContentPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.title),
-        backgroundColor: widget.color,
-        foregroundColor: Colors.white,
-      ),
+          title: Text(widget.title),
+          backgroundColor: widget.color,
+          foregroundColor: Colors.white),
       body: Column(
         children: [
           Expanded(
@@ -1707,7 +1706,6 @@ class _LessonContentPageState extends State<LessonContentPage> {
                 } else {
                   contents = CacheManager.load('contents_${widget.lessonId}');
                 }
-
                 if (contents.isEmpty &&
                     snapshot.connectionState == ConnectionState.waiting)
                   return const Center(child: CircularProgressIndicator());
@@ -1722,58 +1720,52 @@ class _LessonContentPageState extends State<LessonContentPage> {
                     bool isPdf =
                         block['data'].toString().toLowerCase().contains('.pdf');
                     Widget contentUI;
-
                     if (block['type'] == 'file') {
                       if (isPdf) {
                         contentUI = InkWell(
-                          onTap: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (_) => InAppPdfViewer(
-                                      pdfUrl: block['data'],
-                                      title: widget.title,
-                                      color: widget.color))),
-                          child: Container(
-                            height: 80,
-                            decoration: BoxDecoration(
-                                color: widget.color.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(15),
-                                border: Border.all(color: widget.color)),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Icon(Icons.picture_as_pdf,
-                                    size: 35, color: Colors.red),
-                                const SizedBox(width: 10),
-                                Text(S.get('open_pdf'),
-                                    style: TextStyle(
-                                        fontSize: 16,
-                                        color: widget.color,
-                                        fontWeight: FontWeight.bold))
-                              ],
-                            ),
-                          ),
-                        );
+                            onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (_) => InAppPdfViewer(
+                                        pdfUrl: block['data'],
+                                        title: widget.title,
+                                        color: widget.color))),
+                            child: Container(
+                                height: 80,
+                                decoration: BoxDecoration(
+                                    color: widget.color.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(15),
+                                    border: Border.all(color: widget.color)),
+                                child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      const Icon(Icons.picture_as_pdf,
+                                          size: 35, color: Colors.red),
+                                      const SizedBox(width: 10),
+                                      Text(S.get('open_pdf'),
+                                          style: TextStyle(
+                                              fontSize: 16,
+                                              color: widget.color,
+                                              fontWeight: FontWeight.bold))
+                                    ])));
                       } else {
                         contentUI = GestureDetector(
-                          onTap: () =>
-                              showFullScreenImage(context, block['data']),
-                          child: ClipRRect(
-                              borderRadius: BorderRadius.circular(15),
-                              child: CachedNetworkImage(
-                                  imageUrl: block['data'], fit: BoxFit.cover)),
-                        );
+                            onTap: () =>
+                                showFullScreenImage(context, block['data']),
+                            child: ClipRRect(
+                                borderRadius: BorderRadius.circular(15),
+                                child: CachedNetworkImage(
+                                    imageUrl: block['data'],
+                                    fit: BoxFit.cover)));
                       }
                     } else {
                       contentUI = Text(block['data'],
                           style: const TextStyle(fontSize: 18));
                     }
-
                     return Padding(
-                      padding: const EdgeInsets.only(bottom: 20),
-                      child: isTeacherGlobal
-                          ? Stack(
-                              children: [
+                        padding: const EdgeInsets.only(bottom: 20),
+                        child: isTeacherGlobal
+                            ? Stack(children: [
                                 Container(
                                     width: double.infinity,
                                     padding: const EdgeInsets.all(10),
@@ -1786,10 +1778,8 @@ class _LessonContentPageState extends State<LessonContentPage> {
                                             color: Colors.red),
                                         onPressed: () => quickDelete(context,
                                             'lesson_contents', block['id'])))
-                              ],
-                            )
-                          : contentUI,
-                    );
+                              ])
+                            : contentUI);
                   },
                 );
               },
@@ -1797,26 +1787,24 @@ class _LessonContentPageState extends State<LessonContentPage> {
           ),
           if (!isTeacherGlobal)
             Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(15),
-              child: ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.all(15),
-                  backgroundColor: isCompleted ? Colors.green : widget.color,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15)),
-                ),
-                onPressed: _toggleCompletion,
-                icon: Icon(isCompleted
-                    ? Icons.check_circle
-                    : Icons.radio_button_unchecked),
-                label: Text(
-                    isCompleted ? S.get('mark_undone') : S.get('mark_done'),
-                    style: const TextStyle(
-                        fontSize: 18, fontWeight: FontWeight.bold)),
-              ),
-            )
+                width: double.infinity,
+                padding: const EdgeInsets.all(15),
+                child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.all(15),
+                        backgroundColor:
+                            isCompleted ? Colors.green : widget.color,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(15))),
+                    onPressed: _toggleCompletion,
+                    icon: Icon(isCompleted
+                        ? Icons.check_circle
+                        : Icons.radio_button_unchecked),
+                    label: Text(
+                        isCompleted ? S.get('mark_undone') : S.get('mark_done'),
+                        style: const TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.bold))))
         ],
       ),
       floatingActionButton: isTeacherGlobal
@@ -1824,26 +1812,27 @@ class _LessonContentPageState extends State<LessonContentPage> {
               onPressed: () async {
                 String? url = await _uploadSafeFile();
                 if (url != null) {
-                  await supabase.from('lesson_contents').insert({
-                    'lessonId': widget.lessonId,
-                    'type': 'file',
-                    'data': url,
-                    'created_at': DateTime.now().toIso8601String()
-                  });
+                  try {
+                    await supabase.from('lesson_contents').insert({
+                      'lessonId': widget.lessonId,
+                      'type': 'file',
+                      'data': url,
+                      'created_at': DateTime.now().toIso8601String()
+                    });
+                  } catch (e) {}
                 }
               },
               backgroundColor: widget.color,
               child: isUploading
                   ? const CircularProgressIndicator(color: Colors.white)
-                  : const Icon(Icons.add, color: Colors.white),
-            )
+                  : const Icon(Icons.add, color: Colors.white))
           : null,
     );
   }
 }
 
 // ==========================================
-// 11. واجهة الاختبارات
+// 12. واجهة الاختبارات (مع إعلان مكافأة للتصحيح)
 // ==========================================
 class QuizzesGridPage extends StatelessWidget {
   const QuizzesGridPage({super.key});
@@ -1851,37 +1840,33 @@ class QuizzesGridPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(S.get('quiz_title'),
-            style: const TextStyle(fontWeight: FontWeight.bold)),
-        centerTitle: true,
-      ),
+          title: Text(S.get('quiz_title'),
+              style: const TextStyle(fontWeight: FontWeight.bold)),
+          centerTitle: true),
       body: ListView.builder(
         padding: const EdgeInsets.all(15),
         itemCount: appSubjects.length,
         itemBuilder: (ctx, i) => Card(
-          elevation: 2,
-          margin: const EdgeInsets.only(bottom: 15),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          child: ListTile(
-            contentPadding: const EdgeInsets.all(15),
-            leading: CircleAvatar(
-              radius: 30,
-              backgroundColor: appSubjects[i].color.withOpacity(0.2),
-              child: Icon(appSubjects[i].icon,
-                  color: appSubjects[i].color, size: 30),
-            ),
-            title: Text(S.get(appSubjects[i].nameKey),
-                style:
-                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-            trailing: const Icon(Icons.arrow_forward_ios),
-            onTap: () => Navigator.push(
-                ctx,
-                MaterialPageRoute(
-                    builder: (c) =>
-                        SubjectQuizzesListPage(subject: appSubjects[i]))),
-          ),
-        ),
+            elevation: 2,
+            margin: const EdgeInsets.only(bottom: 15),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            child: ListTile(
+                contentPadding: const EdgeInsets.all(15),
+                leading: CircleAvatar(
+                    radius: 30,
+                    backgroundColor: appSubjects[i].color.withOpacity(0.2),
+                    child: Icon(appSubjects[i].icon,
+                        color: appSubjects[i].color, size: 30)),
+                title: Text(S.get(appSubjects[i].nameKey),
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold, fontSize: 18)),
+                trailing: const Icon(Icons.arrow_forward_ios),
+                onTap: () => Navigator.push(
+                    ctx,
+                    MaterialPageRoute(
+                        builder: (c) =>
+                            SubjectQuizzesListPage(subject: appSubjects[i]))))),
       ),
     );
   }
@@ -1898,50 +1883,47 @@ class _SubjectQuizzesListPageState extends State<SubjectQuizzesListPage> {
   void _editQuizTitle(String quizId, String currentTitle) {
     final ctrl = TextEditingController(text: currentTitle);
     showDialog(
-      context: context,
-      builder: (c) => AlertDialog(
-        title: Text(S.get('edit_title')),
-        content: TextField(
-            controller: ctrl,
-            decoration: InputDecoration(labelText: S.get('new_title'))),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(c), child: Text(S.get('cancel'))),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-                backgroundColor: widget.subject.color,
-                foregroundColor: Colors.white),
-            onPressed: () async {
-              if (ctrl.text.isNotEmpty) {
-                try {
-                  await supabase.from('quiz_metadata').upsert({
-                    'id': quizId,
-                    'subjectId': widget.subject.id,
-                    'custom_title': ctrl.text
-                  });
-                } catch (e) {
-                  ScaffoldMessenger.of(context)
-                      .showSnackBar(SnackBar(content: Text('Error: $e')));
-                }
-              }
-              if (mounted) Navigator.pop(context);
-            },
-            child: Text(S.get('save')),
-          ),
-        ],
-      ),
-    );
+        context: context,
+        builder: (c) => AlertDialog(
+                title: Text(S.get('edit_title')),
+                content: TextField(
+                    controller: ctrl,
+                    decoration: InputDecoration(labelText: S.get('new_title'))),
+                actions: [
+                  TextButton(
+                      onPressed: () => Navigator.pop(c),
+                      child: Text(S.get('cancel'))),
+                  ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                          backgroundColor: widget.subject.color,
+                          foregroundColor: Colors.white),
+                      onPressed: () async {
+                        if (ctrl.text.isNotEmpty) {
+                          try {
+                            await supabase.from('quiz_metadata').upsert({
+                              'id': quizId,
+                              'subjectId': widget.subject.id,
+                              'custom_title': ctrl.text
+                            });
+                          } catch (e) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Error: $e')));
+                          }
+                        }
+                        if (mounted) Navigator.pop(context);
+                      },
+                      child: Text(S.get('save')))
+                ]));
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title:
-            Text("${S.get('quiz_title')} - ${S.get(widget.subject.nameKey)}"),
-        backgroundColor: widget.subject.color,
-        foregroundColor: Colors.white,
-      ),
+          title:
+              Text("${S.get('quiz_title')} - ${S.get(widget.subject.nameKey)}"),
+          backgroundColor: widget.subject.color,
+          foregroundColor: Colors.white),
       body: StreamBuilder<List<Map<String, dynamic>>>(
         stream: supabase
             .from('subject_config')
@@ -1950,7 +1932,6 @@ class _SubjectQuizzesListPageState extends State<SubjectQuizzesListPage> {
           int currentCount = configSnap.hasData && configSnap.data!.isNotEmpty
               ? configSnap.data!.first['lesson_count'] ?? 10
               : 10;
-
           return StreamBuilder<List<Map<String, dynamic>>>(
             stream: supabase
                 .from('quiz_metadata')
@@ -1965,102 +1946,92 @@ class _SubjectQuizzesListPageState extends State<SubjectQuizzesListPage> {
                 metaDataList =
                     CacheManager.load('quiz_meta_${widget.subject.id}');
               }
-
               Map<String, String> customTitles = {};
               for (var row in metaDataList) {
                 if (row.containsKey('custom_title'))
                   customTitles[row['id']] = row['custom_title'];
               }
-
               return Column(
                 children: [
                   Expanded(
-                    child: ListView.builder(
-                      padding: const EdgeInsets.all(15),
-                      itemCount: currentCount,
-                      itemBuilder: (ctx, i) {
-                        String quizId = "${widget.subject.id}_quiz_${i + 1}";
-                        String displayTitle = customTitles[quizId] ??
-                            "${S.get('quiz_title')} ${i + 1}";
-                        return Card(
-                          elevation: 0,
-                          margin: const EdgeInsets.only(bottom: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(15),
-                            side: BorderSide(
-                                color: widget.subject.color.withOpacity(0.3)),
-                          ),
-                          child: ListTile(
-                            leading: const Icon(Icons.assignment,
-                                color: Colors.orange, size: 30),
-                            title: Text(displayTitle,
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.bold)),
-                            trailing: isTeacherGlobal
-                                ? IconButton(
-                                    icon: const Icon(Icons.edit,
-                                        color: Colors.blueGrey),
-                                    onPressed: () =>
-                                        _editQuizTitle(quizId, displayTitle))
-                                : const Icon(Icons.play_circle_fill,
-                                    color: Colors.green, size: 35),
-                            onTap: () => Navigator.push(
-                                ctx,
-                                MaterialPageRoute(
-                                    builder: (_) => QuizPlayArea(
-                                        quizId: quizId,
-                                        color: widget.subject.color,
-                                        title: displayTitle))),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
+                      child: ListView.builder(
+                          padding: const EdgeInsets.all(15),
+                          itemCount: currentCount,
+                          itemBuilder: (ctx, i) {
+                            String quizId =
+                                "${widget.subject.id}_quiz_${i + 1}";
+                            String displayTitle = customTitles[quizId] ??
+                                "${S.get('quiz_title')} ${i + 1}";
+                            return Card(
+                                elevation: 0,
+                                margin: const EdgeInsets.only(bottom: 12),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(15),
+                                    side: BorderSide(
+                                        color: widget.subject.color
+                                            .withOpacity(0.3))),
+                                child: ListTile(
+                                    leading: const Icon(Icons.assignment,
+                                        color: Colors.orange, size: 30),
+                                    title: Text(displayTitle,
+                                        style: const TextStyle(
+                                            fontWeight: FontWeight.bold)),
+                                    trailing: isTeacherGlobal
+                                        ? IconButton(
+                                            icon: const Icon(Icons.edit,
+                                                color: Colors.blueGrey),
+                                            onPressed: () => _editQuizTitle(
+                                                quizId, displayTitle))
+                                        : const Icon(Icons.play_circle_fill,
+                                            color: Colors.green, size: 35),
+                                    onTap: () => Navigator.push(
+                                        ctx,
+                                        MaterialPageRoute(
+                                            builder: (_) => QuizPlayArea(
+                                                quizId: quizId,
+                                                color: widget.subject.color,
+                                                title: displayTitle)))));
+                          })),
                   if (isTeacherGlobal)
                     Container(
-                      color: Colors.white,
-                      padding: const EdgeInsets.all(10),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.remove_circle,
-                                color: Colors.red, size: 35),
-                            onPressed: () async {
-                              if (currentCount > 1) {
-                                try {
-                                  await supabase.from('subject_config').upsert({
-                                    'id': "${widget.subject.id}_quiz",
-                                    'lesson_count': currentCount - 1
-                                  });
-                                } catch (e) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(content: Text('Error: $e')));
-                                }
-                              }
-                            },
-                          ),
-                          Text("${S.get('quiz_count')} $currentCount",
-                              style: const TextStyle(
-                                  fontWeight: FontWeight.bold, fontSize: 18)),
-                          IconButton(
-                            icon: const Icon(Icons.add_circle,
-                                color: Colors.green, size: 35),
-                            onPressed: () async {
-                              try {
-                                await supabase.from('subject_config').upsert({
-                                  'id': "${widget.subject.id}_quiz",
-                                  'lesson_count': currentCount + 1
-                                });
-                              } catch (e) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text('Error: $e')));
-                              }
-                            },
-                          ),
-                        ],
-                      ),
-                    )
+                        color: Colors.white,
+                        padding: const EdgeInsets.all(10),
+                        child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              IconButton(
+                                  icon: const Icon(Icons.remove_circle,
+                                      color: Colors.red, size: 35),
+                                  onPressed: () async {
+                                    if (currentCount > 1) {
+                                      try {
+                                        await supabase
+                                            .from('subject_config')
+                                            .upsert({
+                                          'id': "${widget.subject.id}_quiz",
+                                          'lesson_count': currentCount - 1
+                                        });
+                                      } catch (e) {}
+                                    }
+                                  }),
+                              Text("${S.get('quiz_count')} $currentCount",
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 18)),
+                              IconButton(
+                                  icon: const Icon(Icons.add_circle,
+                                      color: Colors.green, size: 35),
+                                  onPressed: () async {
+                                    try {
+                                      await supabase
+                                          .from('subject_config')
+                                          .upsert({
+                                        'id': "${widget.subject.id}_quiz",
+                                        'lesson_count': currentCount + 1
+                                      });
+                                    } catch (e) {}
+                                  })
+                            ]))
                 ],
               );
             },
@@ -2086,13 +2057,11 @@ class QuizPlayArea extends StatefulWidget {
 
 class _QuizPlayAreaState extends State<QuizPlayArea> {
   bool isUploading = false;
-
   Future<void> _uploadDocument(String fileType) async {
     FilePickerResult? result = await FilePicker.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['pdf', 'png', 'jpg'],
-      withData: true,
-    );
+        type: FileType.custom,
+        allowedExtensions: ['pdf', 'png', 'jpg'],
+        withData: true);
     if (result != null) {
       setState(() => isUploading = true);
       try {
@@ -2110,7 +2079,6 @@ class _QuizPlayAreaState extends State<QuizPlayArea> {
         }
         String url =
             supabase.storage.from('jaafari_storage').getPublicUrl(path);
-
         await supabase.from('lesson_contents').insert({
           'lessonId': widget.quizId,
           'type': fileType,
@@ -2130,322 +2098,283 @@ class _QuizPlayAreaState extends State<QuizPlayArea> {
         o4 = TextEditingController();
     int correctOpt = 1;
     showDialog(
-      context: context,
-      builder: (c) => StatefulBuilder(
-        builder: (ctx, setD) => AlertDialog(
-          title: Text(S.get('add_q')),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                    controller: qCtrl,
-                    decoration: InputDecoration(labelText: S.get('q_text'))),
-                TextField(
-                    controller: o1,
-                    decoration: InputDecoration(labelText: S.get('opt1'))),
-                TextField(
-                    controller: o2,
-                    decoration: InputDecoration(labelText: S.get('opt2'))),
-                TextField(
-                    controller: o3,
-                    decoration: InputDecoration(labelText: S.get('opt3'))),
-                TextField(
-                    controller: o4,
-                    decoration: InputDecoration(labelText: S.get('opt4'))),
-                DropdownButton<int>(
-                  value: correctOpt,
-                  items: [1, 2, 3, 4]
-                      .map((e) => DropdownMenuItem(
-                          value: e, child: Text("${S.get('correct_opt')}: $e")))
-                      .toList(),
-                  onChanged: (v) => setD(() => correctOpt = v!),
-                )
-              ],
-            ),
-          ),
-          actions: [
-            ElevatedButton(
-              onPressed: () async {
-                if (qCtrl.text.isNotEmpty && o1.text.isNotEmpty) {
-                  try {
-                    await supabase.from('quiz_questions').insert({
-                      'quizId': widget.quizId,
-                      'q': qCtrl.text,
-                      'opts': [o1.text, o2.text, o3.text, o4.text],
-                      'ans': correctOpt - 1,
-                      'created_at': DateTime.now().toIso8601String()
-                    });
-                    if (mounted) Navigator.pop(c);
-                  } catch (e) {
-                    ScaffoldMessenger.of(context)
-                        .showSnackBar(SnackBar(content: Text('Error: $e')));
-                  }
-                }
-              },
-              child: Text(S.get('save')),
-            )
-          ],
-        ),
-      ),
-    );
+        context: context,
+        builder: (c) => StatefulBuilder(
+            builder: (ctx, setD) => AlertDialog(
+                    title: Text(S.get('add_q')),
+                    content: SingleChildScrollView(
+                        child:
+                            Column(mainAxisSize: MainAxisSize.min, children: [
+                      TextField(
+                          controller: qCtrl,
+                          decoration:
+                              InputDecoration(labelText: S.get('q_text'))),
+                      TextField(
+                          controller: o1,
+                          decoration:
+                              InputDecoration(labelText: S.get('opt1'))),
+                      TextField(
+                          controller: o2,
+                          decoration:
+                              InputDecoration(labelText: S.get('opt2'))),
+                      TextField(
+                          controller: o3,
+                          decoration:
+                              InputDecoration(labelText: S.get('opt3'))),
+                      TextField(
+                          controller: o4,
+                          decoration:
+                              InputDecoration(labelText: S.get('opt4'))),
+                      DropdownButton<int>(
+                          value: correctOpt,
+                          items: [1, 2, 3, 4]
+                              .map((e) => DropdownMenuItem(
+                                  value: e,
+                                  child: Text("${S.get('correct_opt')}: $e")))
+                              .toList(),
+                          onChanged: (v) => setD(() => correctOpt = v!))
+                    ])),
+                    actions: [
+                      ElevatedButton(
+                          onPressed: () async {
+                            if (qCtrl.text.isNotEmpty && o1.text.isNotEmpty) {
+                              try {
+                                await supabase.from('quiz_questions').insert({
+                                  'quizId': widget.quizId,
+                                  'q': qCtrl.text,
+                                  'opts': [o1.text, o2.text, o3.text, o4.text],
+                                  'ans': correctOpt - 1,
+                                  'created_at': DateTime.now().toIso8601String()
+                                });
+                                if (mounted) Navigator.pop(c);
+                              } catch (e) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('Error: $e')));
+                              }
+                            }
+                          },
+                          child: Text(S.get('save')))
+                    ])));
   }
 
   Widget _buildFilesSection(List<Map<String, dynamic>> files,
       String sectionTitle, bool isCorrection) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Padding(
           padding: const EdgeInsets.all(15),
           child: Text(sectionTitle,
               style:
-                  const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-        ),
-        if (files.isEmpty)
-          Padding(
+                  const TextStyle(fontSize: 18, fontWeight: FontWeight.bold))),
+      if (files.isEmpty)
+        Padding(
             padding: const EdgeInsets.symmetric(horizontal: 15),
             child: Text(S.get('no_files'),
-                style: const TextStyle(color: Colors.grey)),
-          ),
-        ListView.builder(
+                style: const TextStyle(color: Colors.grey))),
+      ListView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           padding: const EdgeInsets.symmetric(horizontal: 15),
           itemCount: files.length,
           itemBuilder: (ctx, i) {
             bool isPdf = files[i]['data'].toString().contains('.pdf');
-
-            // إظهار أيقونة القفل في الموبايل فقط وفي حالة التصحيح فقط
-            Widget? trailingIcon;
-            if (isTeacherGlobal) {
-              trailingIcon = IconButton(
-                  icon: const Icon(Icons.delete, color: Colors.red),
-                  onPressed: () =>
-                      quickDelete(context, 'lesson_contents', files[i]['id']));
-            } else if (isCorrection && !kIsWeb) {
-              trailingIcon = const Icon(Icons.lock, color: Colors.orange);
-            }
-
             return Card(
-              margin: const EdgeInsets.only(bottom: 10),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(15),
-                side: BorderSide(color: widget.color.withOpacity(0.5)),
-              ),
-              child: ListTile(
-                leading: Icon(isPdf ? Icons.picture_as_pdf : Icons.image,
-                    color: isPdf ? Colors.red : Colors.blue, size: 40),
-                title: Text(isPdf ? S.get('open_pdf') : S.get('open_img'),
-                    style: const TextStyle(fontWeight: FontWeight.bold)),
-                trailing: trailingIcon,
-                onTap: () {
-                  if (!isTeacherGlobal && isCorrection && !kIsWeb) {
-                    showDialog(
-                      context: context,
-                      builder: (dCtx) => AlertDialog(
-                        title: Text(S.get('watch_ad')),
-                        content: Text(S.get('ad_msg')),
-                        actions: [
-                          TextButton(
-                              onPressed: () => Navigator.pop(dCtx),
-                              child: Text(S.get('cancel'))),
-                          ElevatedButton(
-                            onPressed: () {
-                              Navigator.pop(dCtx);
-                              AdManager.showRewardedAd(() {
-                                if (isPdf) {
-                                  Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                          builder: (_) => InAppPdfViewer(
-                                              pdfUrl: files[i]['data'],
-                                              title: sectionTitle,
-                                              color: widget.color)));
-                                } else {
-                                  showFullScreenImage(
-                                      context, files[i]['data']);
-                                }
-                              });
-                            },
-                            style: ElevatedButton.styleFrom(
-                                backgroundColor: widget.color,
-                                foregroundColor: Colors.white),
-                            child: Text(S.get('watch')),
-                          )
-                        ],
-                      ),
-                    );
-                  } else {
-                    if (isPdf) {
-                      Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (_) => InAppPdfViewer(
-                                  pdfUrl: files[i]['data'],
-                                  title: sectionTitle,
-                                  color: widget.color)));
+                margin: const EdgeInsets.only(bottom: 10),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(15),
+                    side: BorderSide(color: widget.color.withOpacity(0.5))),
+                child: ListTile(
+                  leading: Icon(isPdf ? Icons.picture_as_pdf : Icons.image,
+                      color: isPdf ? Colors.red : Colors.blue, size: 40),
+                  title: Text(isPdf ? S.get('open_pdf') : S.get('open_img'),
+                      style: const TextStyle(fontWeight: FontWeight.bold)),
+                  trailing: isTeacherGlobal
+                      ? IconButton(
+                          icon: const Icon(Icons.delete, color: Colors.red),
+                          onPressed: () => quickDelete(
+                              context, 'lesson_contents', files[i]['id']))
+                      : (isCorrection
+                          ? const Icon(Icons.lock, color: Colors.orange)
+                          : null),
+                  onTap: () {
+                    // ⚠️ في الويب نفتح التصحيح مباشرة دون إزعاج. في الهاتف نطلب إعلاناً
+                    if (!isTeacherGlobal && isCorrection && !kIsWeb) {
+                      showDialog(
+                          context: context,
+                          builder: (dCtx) => AlertDialog(
+                                  title: Text(S.get('watch_ad')),
+                                  content: Text(S.get('ad_msg')),
+                                  actions: [
+                                    TextButton(
+                                        onPressed: () => Navigator.pop(dCtx),
+                                        child: Text(S.get('cancel'))),
+                                    ElevatedButton(
+                                        onPressed: () {
+                                          Navigator.pop(dCtx);
+                                          AdManager.showRewardedAd(() {
+                                            if (isPdf)
+                                              Navigator.push(
+                                                  context,
+                                                  MaterialPageRoute(
+                                                      builder: (_) =>
+                                                          InAppPdfViewer(
+                                                              pdfUrl: files[i]
+                                                                  ['data'],
+                                                              title:
+                                                                  sectionTitle,
+                                                              color: widget
+                                                                  .color)));
+                                            else
+                                              showFullScreenImage(
+                                                  context, files[i]['data']);
+                                          });
+                                        },
+                                        style: ElevatedButton.styleFrom(
+                                            backgroundColor: widget.color,
+                                            foregroundColor: Colors.white),
+                                        child: Text(S.get('watch')))
+                                  ]));
                     } else {
-                      showFullScreenImage(context, files[i]['data']);
+                      if (isPdf)
+                        Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) => InAppPdfViewer(
+                                    pdfUrl: files[i]['data'],
+                                    title: sectionTitle,
+                                    color: widget.color)));
+                      else
+                        showFullScreenImage(context, files[i]['data']);
                     }
-                  }
-                },
-              ),
-            );
-          },
-        ),
-      ],
-    );
+                  },
+                ));
+          })
+    ]);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.title),
-        backgroundColor: widget.color,
-        foregroundColor: Colors.white,
-      ),
+          title: Text(widget.title),
+          backgroundColor: widget.color,
+          foregroundColor: Colors.white),
       body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            StreamBuilder<List<Map<String, dynamic>>>(
-              stream: supabase
-                  .from('lesson_contents')
-                  .stream(primaryKey: ['id'])
-                  .eq('lessonId', widget.quizId)
-                  .order('created_at'),
-              builder: (context, snapshot) {
-                List<Map<String, dynamic>> data = [];
-                if (snapshot.hasData) {
-                  data = snapshot.data!;
-                  CacheManager.save('quiz_contents_${widget.quizId}', data);
-                } else {
-                  data = CacheManager.load('quiz_contents_${widget.quizId}');
-                }
-
-                var examFiles =
-                    data.where((item) => item['type'] == 'exam_file').toList();
-                var correctionFiles = data
-                    .where((item) => item['type'] == 'correction_file')
-                    .toList();
-
-                return Column(
-                  children: [
-                    _buildFilesSection(examFiles, S.get('exam_files'), false),
-                    const Divider(thickness: 2),
-                    _buildFilesSection(
-                        correctionFiles, S.get('correction_files'), true),
-                  ],
-                );
-              },
-            ),
-            const Divider(thickness: 2),
-            Padding(
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          StreamBuilder<List<Map<String, dynamic>>>(
+            stream: supabase
+                .from('lesson_contents')
+                .stream(primaryKey: ['id'])
+                .eq('lessonId', widget.quizId)
+                .order('created_at'),
+            builder: (context, snapshot) {
+              List<Map<String, dynamic>> data = [];
+              if (snapshot.hasData) {
+                data = snapshot.data!;
+                CacheManager.save('quiz_contents_${widget.quizId}', data);
+              } else {
+                data = CacheManager.load('quiz_contents_${widget.quizId}');
+              }
+              var examFiles =
+                  data.where((item) => item['type'] == 'exam_file').toList();
+              var correctionFiles = data
+                  .where((item) => item['type'] == 'correction_file')
+                  .toList();
+              return Column(children: [
+                _buildFilesSection(examFiles, S.get('exam_files'), false),
+                const Divider(thickness: 2),
+                _buildFilesSection(
+                    correctionFiles, S.get('correction_files'), true)
+              ]);
+            },
+          ),
+          const Divider(thickness: 2),
+          Padding(
               padding: const EdgeInsets.all(15),
               child: Text(S.get('qcm_section'),
                   style: const TextStyle(
-                      fontSize: 18, fontWeight: FontWeight.bold)),
-            ),
-            if (!isTeacherGlobal)
-              Container(
+                      fontSize: 18, fontWeight: FontWeight.bold))),
+          if (!isTeacherGlobal)
+            Container(
                 margin:
                     const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                 width: double.infinity,
                 height: 60,
                 child: ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: widget.color,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(15)),
-                  ),
-                  onPressed: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) => InteractiveQuizScreen(
-                              quizId: widget.quizId,
-                              title: widget.title,
-                              themeColor: widget.color))),
-                  icon: const Icon(Icons.touch_app, size: 25),
-                  label: Text(S.get('start_quiz'),
-                      style: const TextStyle(
-                          fontSize: 18, fontWeight: FontWeight.bold)),
-                ),
-              ),
-            if (isTeacherGlobal)
-              StreamBuilder<List<Map<String, dynamic>>>(
-                stream: supabase
-                    .from('quiz_questions')
-                    .stream(primaryKey: ['id'])
-                    .eq('quizId', widget.quizId)
-                    .order('created_at'),
-                builder: (context, snapshot) {
-                  List<Map<String, dynamic>> qData = [];
-                  if (snapshot.hasData) {
-                    qData = snapshot.data!;
-                    CacheManager.save('quiz_q_${widget.quizId}', qData);
-                  } else {
-                    qData = CacheManager.load('quiz_q_${widget.quizId}');
-                  }
-
-                  if (qData.isEmpty) {
-                    return Padding(
+                    style: ElevatedButton.styleFrom(
+                        backgroundColor: widget.color,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(15))),
+                    onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => InteractiveQuizScreen(
+                                quizId: widget.quizId,
+                                title: widget.title,
+                                themeColor: widget.color))),
+                    icon: const Icon(Icons.touch_app, size: 25),
+                    label: Text(S.get('start_quiz'),
+                        style: const TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.bold)))),
+          if (isTeacherGlobal)
+            StreamBuilder<List<Map<String, dynamic>>>(
+              stream: supabase
+                  .from('quiz_questions')
+                  .stream(primaryKey: ['id'])
+                  .eq('quizId', widget.quizId)
+                  .order('created_at'),
+              builder: (context, snapshot) {
+                List<Map<String, dynamic>> qData = [];
+                if (snapshot.hasData) {
+                  qData = snapshot.data!;
+                  CacheManager.save('quiz_q_${widget.quizId}', qData);
+                } else {
+                  qData = CacheManager.load('quiz_q_${widget.quizId}');
+                }
+                if (qData.isEmpty)
+                  return Padding(
                       padding: const EdgeInsets.all(15),
                       child: Text(S.get('no_qcm'),
-                          style: const TextStyle(color: Colors.grey)),
-                    );
-                  }
-                  return ListView.builder(
+                          style: const TextStyle(color: Colors.grey)));
+                return ListView.builder(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
                     itemCount: qData.length,
                     itemBuilder: (ctx, i) => ListTile(
-                      title: Text(qData[i]['q']),
-                      trailing: IconButton(
-                        icon: const Icon(Icons.delete, color: Colors.red),
-                        onPressed: () => quickDelete(
-                            context, 'quiz_questions', qData[i]['id']),
-                      ),
-                    ),
-                  );
-                },
-              )
-          ],
-        ),
+                        title: Text(qData[i]['q']),
+                        trailing: IconButton(
+                            icon: const Icon(Icons.delete, color: Colors.red),
+                            onPressed: () => quickDelete(
+                                context, 'quiz_questions', qData[i]['id']))));
+              },
+            )
+        ]),
       ),
       floatingActionButton: isTeacherGlobal
-          ? Column(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                if (isUploading) const CircularProgressIndicator(),
-                FloatingActionButton.extended(
+          ? Column(mainAxisAlignment: MainAxisAlignment.end, children: [
+              if (isUploading) const CircularProgressIndicator(),
+              FloatingActionButton.extended(
                   heroTag: 'f1',
                   onPressed: () => _uploadDocument('exam_file'),
                   backgroundColor: Colors.amber,
                   icon: const Icon(Icons.upload_file, color: Colors.black),
                   label: Text(S.get('add_exam'),
-                      style: const TextStyle(color: Colors.black)),
-                ),
-                const SizedBox(height: 10),
-                FloatingActionButton.extended(
+                      style: const TextStyle(color: Colors.black))),
+              const SizedBox(height: 10),
+              FloatingActionButton.extended(
                   heroTag: 'f2',
                   onPressed: () => _uploadDocument('correction_file'),
                   backgroundColor: Colors.lightGreen,
                   icon: const Icon(Icons.check_circle),
-                  label: Text(S.get('add_correction')),
-                ),
-                const SizedBox(height: 10),
-                FloatingActionButton.extended(
+                  label: Text(S.get('add_correction'))),
+              const SizedBox(height: 10),
+              FloatingActionButton.extended(
                   heroTag: 'f3',
                   onPressed: _addQcmQuestion,
                   backgroundColor: widget.color,
                   icon: const Icon(Icons.add_task),
-                  label: Text(S.get('add_q')),
-                ),
-              ],
-            )
+                  label: Text(S.get('add_q')))
+            ])
           : null,
     );
   }
@@ -2489,9 +2418,8 @@ class _InteractiveQuizScreenState extends State<InteractiveQuizScreen> {
         isLoading = false;
       });
     } catch (e) {
-      var cached = CacheManager.load('interactive_q_${widget.quizId}');
       setState(() {
-        questionsList = cached;
+        questionsList = CacheManager.load('interactive_q_${widget.quizId}');
         isLoading = false;
       });
     }
@@ -2499,47 +2427,37 @@ class _InteractiveQuizScreenState extends State<InteractiveQuizScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (isLoading) {
+    if (isLoading)
       return Scaffold(
-        appBar: AppBar(
-            title: Text(widget.title), backgroundColor: widget.themeColor),
-        body: const Center(child: CircularProgressIndicator()),
-      );
-    }
-    if (questionsList.isEmpty) {
+          appBar: AppBar(
+              title: Text(widget.title), backgroundColor: widget.themeColor),
+          body: const Center(child: CircularProgressIndicator()));
+    if (questionsList.isEmpty)
       return Scaffold(
-        appBar: AppBar(
-            title: Text(widget.title), backgroundColor: widget.themeColor),
-        body: Center(child: Text(S.get('no_qcm'))),
-      );
-    }
+          appBar: AppBar(
+              title: Text(widget.title), backgroundColor: widget.themeColor),
+          body: Center(child: Text(S.get('no_qcm'))));
 
     if (isFinished) {
       int score = 0;
-      for (int i = 0; i < questionsList.length; i++) {
+      for (int i = 0; i < questionsList.length; i++)
         if (studentAnswers[i] == questionsList[i]['ans']) score++;
-      }
       return Scaffold(
         appBar: AppBar(
-          title: Text(S.get('score_is')),
-          backgroundColor: widget.themeColor,
-          foregroundColor: Colors.white,
-        ),
+            title: Text(S.get('score_is')),
+            backgroundColor: widget.themeColor,
+            foregroundColor: Colors.white),
         body: ListView(
           padding: const EdgeInsets.all(20),
           children: [
             Center(
-              child: Text(
-                "$score / ${questionsList.length}",
-                style: TextStyle(
-                  fontSize: 50,
-                  fontWeight: FontWeight.bold,
-                  color: score > questionsList.length / 2
-                      ? Colors.green
-                      : Colors.red,
-                ),
-              ),
-            ),
+                child: Text("$score / ${questionsList.length}",
+                    style: TextStyle(
+                        fontSize: 50,
+                        fontWeight: FontWeight.bold,
+                        color: score > questionsList.length / 2
+                            ? Colors.green
+                            : Colors.red))),
             const SizedBox(height: 20),
             Text(S.get('review_mistakes'),
                 style:
@@ -2549,37 +2467,34 @@ class _InteractiveQuizScreenState extends State<InteractiveQuizScreen> {
               var qData = questionsList[i];
               bool isCorrect = studentAnswers[i] == qData['ans'];
               return Card(
-                color: isCorrect ? Colors.green.shade50 : Colors.red.shade50,
-                margin: const EdgeInsets.only(bottom: 15),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(15),
-                  side:
-                      BorderSide(color: isCorrect ? Colors.green : Colors.red),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(15),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text("س${i + 1}: ${qData['q']}",
-                          style: const TextStyle(fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 5),
-                      Text(
-                        "${S.get('your_ans')} ${studentAnswers[i] == null ? S.get('no_ans') : qData['opts'][studentAnswers[i]]}",
-                        style: TextStyle(
-                            color: isCorrect ? Colors.green : Colors.red,
-                            fontWeight: FontWeight.bold),
-                      ),
-                      if (!isCorrect)
-                        Text(
-                          "${S.get('correct_ans')} ${qData['opts'][qData['ans']]}",
-                          style: const TextStyle(
-                              color: Colors.green, fontWeight: FontWeight.bold),
-                        ),
-                    ],
-                  ),
-                ),
-              );
+                  color: isCorrect ? Colors.green.shade50 : Colors.red.shade50,
+                  margin: const EdgeInsets.only(bottom: 15),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15),
+                      side: BorderSide(
+                          color: isCorrect ? Colors.green : Colors.red)),
+                  child: Padding(
+                      padding: const EdgeInsets.all(15),
+                      child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text("س${i + 1}: ${qData['q']}",
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold)),
+                            const SizedBox(height: 5),
+                            Text(
+                                "${S.get('your_ans')} ${studentAnswers[i] == null ? S.get('no_ans') : qData['opts'][studentAnswers[i]]}",
+                                style: TextStyle(
+                                    color:
+                                        isCorrect ? Colors.green : Colors.red,
+                                    fontWeight: FontWeight.bold)),
+                            if (!isCorrect)
+                              Text(
+                                  "${S.get('correct_ans')} ${qData['opts'][qData['ans']]}",
+                                  style: const TextStyle(
+                                      color: Colors.green,
+                                      fontWeight: FontWeight.bold))
+                          ])));
             })
           ],
         ),
@@ -2589,94 +2504,82 @@ class _InteractiveQuizScreenState extends State<InteractiveQuizScreen> {
     var currentQ = questionsList[currentQIndex];
     return Scaffold(
       appBar: AppBar(
-        title: Text("سؤال ${currentQIndex + 1} / ${questionsList.length}"),
-        backgroundColor: widget.themeColor,
-        foregroundColor: Colors.white,
-      ),
+          title: Text("سؤال ${currentQIndex + 1} / ${questionsList.length}"),
+          backgroundColor: widget.themeColor,
+          foregroundColor: Colors.white),
       body: Padding(
         padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            LinearProgressIndicator(
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          LinearProgressIndicator(
               value: (currentQIndex + 1) / questionsList.length,
               backgroundColor: Colors.grey.shade300,
               color: widget.themeColor,
-              minHeight: 8,
-            ),
-            const SizedBox(height: 30),
-            Text(currentQ['q'],
-                style:
-                    const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 30),
-            ...List.generate(currentQ['opts'].length, (i) {
-              bool isSelected = studentAnswers[currentQIndex] == i;
-              return InkWell(
+              minHeight: 8),
+          const SizedBox(height: 30),
+          Text(currentQ['q'],
+              style:
+                  const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 30),
+          ...List.generate(currentQ['opts'].length, (i) {
+            bool isSelected = studentAnswers[currentQIndex] == i;
+            return InkWell(
                 onTap: () => setState(() => studentAnswers[currentQIndex] = i),
                 child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 300),
-                  margin: const EdgeInsets.only(bottom: 15),
-                  padding: const EdgeInsets.all(15),
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? widget.themeColor.withOpacity(0.2)
-                        : Colors.white,
-                    border: Border.all(
+                    duration: const Duration(milliseconds: 300),
+                    margin: const EdgeInsets.only(bottom: 15),
+                    padding: const EdgeInsets.all(15),
+                    decoration: BoxDecoration(
                         color: isSelected
-                            ? widget.themeColor
-                            : Colors.grey.shade300,
-                        width: isSelected ? 2 : 1),
-                    borderRadius: BorderRadius.circular(15),
-                  ),
-                  child: Text(
-                    currentQ['opts'][i],
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: isSelected ? widget.themeColor : Colors.black,
-                      fontWeight:
-                          isSelected ? FontWeight.bold : FontWeight.normal,
-                    ),
-                  ),
-                ),
-              );
-            }),
-            const Spacer(),
-            SizedBox(
+                            ? widget.themeColor.withOpacity(0.2)
+                            : Colors.white,
+                        border: Border.all(
+                            color: isSelected
+                                ? widget.themeColor
+                                : Colors.grey.shade300,
+                            width: isSelected ? 2 : 1),
+                        borderRadius: BorderRadius.circular(15)),
+                    child: Text(currentQ['opts'][i],
+                        style: TextStyle(
+                            fontSize: 18,
+                            color:
+                                isSelected ? widget.themeColor : Colors.black,
+                            fontWeight: isSelected
+                                ? FontWeight.bold
+                                : FontWeight.normal))));
+          }),
+          const Spacer(),
+          SizedBox(
               width: double.infinity,
               height: 55,
               child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: widget.themeColor,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15)),
-                ),
-                onPressed: () {
-                  if (currentQIndex < questionsList.length - 1) {
-                    setState(() => currentQIndex++);
-                  } else {
-                    setState(() => isFinished = true);
-                    AdManager.showInterstitialAd();
-                  }
-                },
-                child: Text(
-                  currentQIndex < questionsList.length - 1
-                      ? S.get('next_q')
-                      : S.get('finish_q'),
-                  style: const TextStyle(
-                      fontSize: 20, fontWeight: FontWeight.bold),
-                ),
-              ),
-            )
-          ],
-        ),
+                  style: ElevatedButton.styleFrom(
+                      backgroundColor: widget.themeColor,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15))),
+                  onPressed: () {
+                    if (currentQIndex < questionsList.length - 1) {
+                      setState(() => currentQIndex++);
+                    } else {
+                      setState(() => isFinished = true);
+                      AdManager
+                          .showInterstitialAd(); /* ⚠️ يظهر الإعلان البيني في الهاتف عند تسليم الاختبار */
+                    }
+                  },
+                  child: Text(
+                      currentQIndex < questionsList.length - 1
+                          ? S.get('next_q')
+                          : S.get('finish_q'),
+                      style: const TextStyle(
+                          fontSize: 20, fontWeight: FontWeight.bold))))
+        ]),
       ),
     );
   }
 }
 
 // ==========================================
-// 12. صفحة الملف الشخصي والدعم (Instagram) وتعدد اللغات الفوري
+// 13. الملف الشخصي وتعدد اللغات
 // ==========================================
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -2695,10 +2598,9 @@ class _ProfilePageState extends State<ProfilePage> {
     try {
       await launchUrl(url, mode: LaunchMode.externalApplication);
     } catch (e) {
-      if (mounted) {
+      if (mounted)
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text(S.get('ig_error'))));
-      }
     }
   }
 
@@ -2707,124 +2609,103 @@ class _ProfilePageState extends State<ProfilePage> {
     String displayName = currentUserNameGlobal.isNotEmpty
         ? currentUserNameGlobal
         : (isTeacherGlobal ? S.get('teacher') : S.get('student'));
-
     return Scaffold(
       appBar: AppBar(
-        title: Text(S.get('profile'),
-            style: const TextStyle(fontWeight: FontWeight.bold)),
-        centerTitle: true,
-      ),
+          title: Text(S.get('profile'),
+              style: const TextStyle(fontWeight: FontWeight.bold)),
+          centerTitle: true),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
           Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Theme.of(context).cardColor,
-              borderRadius: BorderRadius.circular(25),
-              boxShadow: [
-                BoxShadow(
-                    color: Colors.grey.withOpacity(0.1),
-                    blurRadius: 15,
-                    offset: const Offset(0, 5))
-              ],
-            ),
-            child: Column(
-              children: [
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                  color: Theme.of(context).cardColor,
+                  borderRadius: BorderRadius.circular(25),
+                  boxShadow: [
+                    BoxShadow(
+                        color: Colors.grey.withOpacity(0.1),
+                        blurRadius: 15,
+                        offset: const Offset(0, 5))
+                  ]),
+              child: Column(children: [
                 const CircleAvatar(
-                  radius: 50,
-                  backgroundColor: Colors.deepPurple,
-                  child: Icon(Icons.person, size: 50, color: Colors.white),
-                ),
+                    radius: 50,
+                    backgroundColor: Colors.deepPurple,
+                    child: Icon(Icons.person, size: 50, color: Colors.white)),
                 const SizedBox(height: 15),
                 Text(displayName,
                     style: const TextStyle(
                         fontSize: 22, fontWeight: FontWeight.bold)),
                 Text(currentUserEmailGlobal,
-                    style: const TextStyle(fontSize: 16, color: Colors.grey)),
-              ],
-            ),
-          ),
+                    style: const TextStyle(fontSize: 16, color: Colors.grey))
+              ])),
           const SizedBox(height: 30),
           Card(
             elevation: 0,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-              side: BorderSide(color: Colors.grey.withOpacity(0.2)),
-            ),
-            child: Column(
-              children: [
-                ListTile(
+                borderRadius: BorderRadius.circular(20),
+                side: BorderSide(color: Colors.grey.withOpacity(0.2))),
+            child: Column(children: [
+              ListTile(
                   leading: const Icon(Icons.dark_mode, color: Colors.indigo),
                   title: Text(S.get('dark_mode'),
                       style: const TextStyle(fontWeight: FontWeight.bold)),
                   trailing: Switch(
-                    value: themeNotifier.value == ThemeMode.dark,
-                    onChanged: (v) {
-                      themeNotifier.value =
-                          v ? ThemeMode.dark : ThemeMode.light;
-                      prefs.setBool('is_dark', v);
-                    },
-                  ),
-                ),
-                const Divider(height: 1),
-                ListTile(
+                      value: themeNotifier.value == ThemeMode.dark,
+                      onChanged: (v) {
+                        themeNotifier.value =
+                            v ? ThemeMode.dark : ThemeMode.light;
+                        prefs.setBool('is_dark', v);
+                      })),
+              const Divider(height: 1),
+              ListTile(
                   leading: const Icon(Icons.language, color: Colors.teal),
                   title: Text(S.get('lang'),
                       style: const TextStyle(fontWeight: FontWeight.bold)),
                   trailing: const Icon(Icons.arrow_drop_down),
                   onTap: () => showModalBottomSheet(
-                    context: context,
-                    shape: const RoundedRectangleBorder(
-                        borderRadius:
-                            BorderRadius.vertical(top: Radius.circular(20))),
-                    builder: (c) => Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Text(
-                            "اختر اللغة / Select Language / Choisir la langue",
-                            style: TextStyle(
-                                fontWeight: FontWeight.bold, fontSize: 16),
-                          ),
-                          const SizedBox(height: 20),
-                          ListTile(
-                            title: const Text("العربية 🇸🇦"),
-                            onTap: () {
-                              _changeLanguage('ar');
-                              Navigator.pop(context);
-                            },
-                          ),
-                          ListTile(
-                            title: const Text("English 🇬🇧"),
-                            onTap: () {
-                              _changeLanguage('en');
-                              Navigator.pop(context);
-                            },
-                          ),
-                          ListTile(
-                            title: const Text("Français 🇫🇷"),
-                            onTap: () {
-                              _changeLanguage('fr');
-                              Navigator.pop(context);
-                            },
-                          )
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-                const Divider(height: 1),
-                ListTile(
+                      context: context,
+                      shape: const RoundedRectangleBorder(
+                          borderRadius:
+                              BorderRadius.vertical(top: Radius.circular(20))),
+                      builder: (c) => Padding(
+                          padding: const EdgeInsets.all(20),
+                          child:
+                              Column(mainAxisSize: MainAxisSize.min, children: [
+                            const Text(
+                                "اختر اللغة / Select Language / Choisir la langue",
+                                style: TextStyle(
+                                    fontWeight: FontWeight.bold, fontSize: 16)),
+                            const SizedBox(height: 20),
+                            ListTile(
+                                title: const Text("العربية 🇸🇦"),
+                                onTap: () {
+                                  _changeLanguage('ar');
+                                  Navigator.pop(context);
+                                }),
+                            ListTile(
+                                title: const Text("English 🇬🇧"),
+                                onTap: () {
+                                  _changeLanguage('en');
+                                  Navigator.pop(context);
+                                }),
+                            ListTile(
+                                title: const Text("Français 🇫🇷"),
+                                onTap: () {
+                                  _changeLanguage('fr');
+                                  Navigator.pop(context);
+                                })
+                          ])))),
+              const Divider(height: 1),
+              ListTile(
                   leading: const Icon(Icons.camera_alt_outlined,
                       color: Colors.purpleAccent),
                   title: Text(S.get('support'),
                       style: const TextStyle(fontWeight: FontWeight.bold)),
-                  onTap: _contactInstagram,
-                ),
-                const Divider(height: 1),
-                ListTile(
+                  onTap: _contactInstagram),
+              const Divider(height: 1),
+              ListTile(
                   leading: const Icon(Icons.logout, color: Colors.red),
                   title: Text(S.get('logout'),
                       style: const TextStyle(
@@ -2832,10 +2713,8 @@ class _ProfilePageState extends State<ProfilePage> {
                   onTap: () async {
                     await supabase.auth.signOut();
                     isTeacherGlobal = false;
-                  },
-                ),
-              ],
-            ),
+                  })
+            ]),
           )
         ],
       ),
