@@ -13,13 +13,14 @@ import 'dart:io' show File;
 import 'dart:typed_data';
 import 'dart:convert';
 import 'dart:async';
-import 'package:flutter/foundation.dart'; // ⚠️ تم إضافة هذا للتعرف على نوع الجهاز (أندرويد/آيفون)
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:url_launcher/url_launcher.dart';
 
 // ==========================================
-// 1. نظام إعلانات AdMob الذكي (للهاتف فقط)
+// 1. نظام الإعلانات الحقيقي (AdMob للهاتف فقط)
 // ==========================================
 class AdManager {
+  // ⚠️ تم وضع أكوادك الحقيقية 100% كما طلبت
   static String get bannerAdUnitId => 'ca-app-pub-4559237560832197/1557905110';
   static String get interstitialAdUnitId =>
       'ca-app-pub-4559237560832197/8523526881';
@@ -76,16 +77,20 @@ class AdManager {
 
   static void checkAndShowTimerAd() {
     if (kIsWeb) return;
-    if (DateTime.now().difference(_lastAdShowTime).inMinutes >= 5) {
+    // ⚠️ الإعلان سيظهر كل 3 دقائق كما طلبت
+    if (DateTime.now().difference(_lastAdShowTime).inMinutes >= 3) {
       showInterstitialAd();
     }
   }
 
   static void showRewardedAd(Function onRewardEarned) {
     if (kIsWeb) {
+      // ⚠️ في الويب: يفتح التصحيح مباشرة دون إعلانات منبثقة مزعجة!
       onRewardEarned();
       return;
     }
+
+    // في الهاتف: إعلان AdMob بمكافأة يعمل داخل التطبيق
     if (_rewardedAd != null) {
       _rewardedAd!.show(
           onUserEarnedReward: (AdWithoutView ad, RewardItem reward) {
@@ -130,68 +135,92 @@ class CacheManager {
 class S {
   static const Map<String, Map<String, String>> _data = {
     'ar': {
-      'app_title': 'Jaafari Guide', 'lessons': 'الدروس',
-      'quizzes': 'الاختبارات', 'profile': 'حسابي',
-      'email': 'البريد الإلكتروني', 'pass': 'كلمة المرور',
+      'app_title': 'Jaafari Guide',
+      'lessons': 'الدروس',
+      'quizzes': 'الاختبارات',
+      'profile': 'حسابي',
+      'email': 'البريد الإلكتروني',
+      'pass': 'كلمة المرور',
       'confirm_pass': 'تأكيد كلمة المرور',
-      'first_name': 'الاسم الشخصي', 'last_name': 'النسب (اللقب)',
+      'first_name': 'الاسم الشخصي',
+      'last_name': 'النسب (اللقب)',
       'login': 'تسجيل الدخول',
-      'register': 'إنشاء حساب تلميذ', 'have_acc': 'لديك حساب؟ سجل الدخول',
+      'register': 'إنشاء حساب تلميذ',
+      'have_acc': 'لديك حساب؟ سجل الدخول',
       'no_acc': 'تلميذ جديد؟ أنشئ حساباً',
       'pass_mismatch': 'كلمات المرور غير متطابقة!',
       'fill_fields': 'يرجى ملء جميع الحقول',
       'wrong_auth': 'البريد الإلكتروني أو كلمة المرور غير صحيحة.',
       'auth_error': 'حدث خطأ أثناء المصادقة.',
-      'subjects': 'المواد الدراسية', 'lesson': 'الدرس',
-      'edit_title': 'تعديل العنوان', 'new_title': 'العنوان الجديد',
-      'dark_mode': 'الوضع الليلي', 'lang': 'لغة التطبيق',
-      'logout': 'تسجيل الخروج', 'support': 'التواصل مع الدعم (Instagram)',
-      'math': 'الرياضيات', 'physics': 'الفيزياء والكيمياء',
+      'subjects': 'المواد الدراسية',
+      'lesson': 'الدرس',
+      'edit_title': 'تعديل العنوان',
+      'new_title': 'العنوان الجديد',
+      'dark_mode': 'الوضع الليلي',
+      'lang': 'لغة التطبيق',
+      'logout': 'تسجيل الخروج',
+      'support': 'التواصل مع الدعم',
+      'math': 'الرياضيات',
+      'physics': 'الفيزياء والكيمياء',
       'science': 'علوم الحياة والأرض',
-      'english': 'اللغة الإنجليزية', 'philosophy': 'الفلسفة',
-      'save': 'حفظ', 'cancel': 'إلغاء', 'delete': 'حذف',
+      'english': 'اللغة الإنجليزية',
+      'philosophy': 'الفلسفة',
+      'save': 'حفظ',
+      'cancel': 'إلغاء',
+      'delete': 'حذف',
       'offline_msg': 'أنت الآن تتصفح بدون إنترنت. (البيانات محفوظة)',
-      'welcome': 'مرحباً', 'student': 'تلميذنا الطموح',
-      'teacher': 'الأستاذ بلال الجعفري', 'exam_countdown': 'الامتحان الوطني',
-      'days': 'أيام', 'hours': 'ساعات',
+      'welcome': 'مرحباً',
+      'student': 'تلميذنا الطموح',
+      'teacher': 'الأستاذ بلال الجعفري',
+      'exam_countdown': 'الامتحان الوطني',
+      'days': 'أيام',
+      'hours': 'ساعات',
       'minutes': 'دقائق',
       'seconds': 'ثواني',
-      'not_set': 'لم يتم تحديد موعد الامتحان بعد.',
-      'set_plan': 'تحديد خطة المادة (تاريخ الانتهاء)',
+      'not_set': 'لم يتم تحديد موعد الامتحان.',
+      'set_plan': 'تحديد خطة المادة',
       'plan_goal': 'خطة العمل:',
-      'daily_plan': 'درس يومياً للانتهاء في الموعد 🚀', 'completed': '✔️ مكتمل',
-      'mark_done': 'إنهاء وإكمال الدرس', 'mark_undone': 'إلغاء إكمال الدرس',
+      'daily_plan': 'درس يومياً للانتهاء 🚀',
+      'completed': '✔️ مكتمل',
+      'mark_done': 'إكمال الدرس',
+      'mark_undone': 'إلغاء إكمال الدرس',
       'exam_files': 'أوراق الامتحان',
       'correction_files': 'أوراق التصحيح 🔒',
       'qcm_section': 'الاختبار التفاعلي (QCM)',
       'start_quiz': 'ابدأ الاختبار التفاعلي',
-      'add_exam': 'إرفاق امتحان', 'add_correction': 'إرفاق تصحيح',
-      'add_q': 'إضافة سؤال', 'q_text': 'نص السؤال',
-      'correct_opt': 'الجواب الصحيح (1-4)', 'score_is': 'نتيجتك هي:',
+      'add_exam': 'إرفاق امتحان',
+      'add_correction': 'إرفاق تصحيح',
+      'add_q': 'إضافة سؤال',
+      'q_text': 'نص السؤال',
+      'correct_opt': 'الجواب الصحيح (1-4)',
+      'score_is': 'نتيجتك هي:',
       'review_mistakes': 'مراجعة الأخطاء:',
-      'correct_ans': 'الجواب الصحيح:', 'your_ans': 'إجابتك:',
-      'next_q': 'السؤال التالي', 'finish_q': 'إنهاء وتسليم',
-      'success_del': 'تم الحذف بنجاح ✔️', 'error_del': 'تعذر الحذف',
-      'open_pdf': 'فتح ملف الـ PDF', 'open_img': 'تكبير الصورة',
-      'no_files': 'لا توجد ملفات مرفقة حالياً.',
+      'correct_ans': 'الجواب الصحيح:',
+      'your_ans': 'إجابتك:',
+      'next_q': 'السؤال التالي',
+      'finish_q': 'إنهاء وتسليم',
+      'success_del': 'تم الحذف بنجاح ✔️',
+      'error_del': 'تعذر الحذف',
+      'open_pdf': 'فتح ملف الـ PDF',
+      'open_img': 'تكبير الصورة',
+      'no_files': 'لا توجد ملفات مرفقة.',
       'no_qcm': 'لا توجد أسئلة تفاعلية بعد.',
       'opt1': 'الخيار 1',
       'opt2': 'الخيار 2',
-      'opt3': 'الخيار 3', 'opt4': 'الخيار 4', 'quiz_title': 'اختبار',
+      'opt3': 'الخيار 3',
+      'opt4': 'الخيار 4',
+      'quiz_title': 'اختبار',
       'exam_setup': 'إعداد الامتحان الوطني',
-      'exam_title': 'عنوان الامتحان', 'choose_date': 'اختر التاريخ',
-      'lesson_count': 'عدد الدروس:', 'quiz_count': 'عدد الاختبارات:',
-      'uploading': 'جاري الرفع...', 'success_upload': 'تم الرفع بنجاح',
-      'ig_error': 'لا يمكن فتح تطبيق إنستغرام',
-      'no_ans': 'لم تجب', 'watch_ad': 'مشاهدة إعلان لفتح التصحيح',
-      'ad_msg': 'ورقة التصحيح مقفلة، يرجى مشاهدة إعلان قصير لفتحها مجاناً.',
-      'watch': 'مشاهدة الآن',
-      // ⚠️ نصوص النافذة الذكية للأندرويد
-      'promo_title': 'تطبيق الأندرويد متاح الآن! 🎉',
-      'promo_desc':
-          'للحصول على تجربة أسرع، وإشعارات حصرية، والعمل بدون إنترنت.. قم بتحميل تطبيقنا الرسمي الآن.',
-      'download_app': '📥 تحميل التطبيق',
-      'continue_web': 'إكمال في المتصفح',
+      'exam_title': 'عنوان الامتحان',
+      'choose_date': 'اختر التاريخ',
+      'lesson_count': 'عدد الدروس:',
+      'quiz_count': 'عدد الاختبارات:',
+      'uploading': 'جاري الرفع...',
+      'success_upload': 'تم الرفع بنجاح',
+      'ig_error': 'لا يمكن فتح إنستغرام',
+      'no_ans': 'لم تجب',
+      'watch_ad': 'مشاهدة إعلان لفتح التصحيح',
+      'ad_msg': 'الورقة مقفلة، يرجى مشاهدة إعلان قصير لفتحها مجاناً.',
     },
     'en': {
       'app_title': 'Jaafari Guide',
@@ -218,7 +247,7 @@ class S {
       'dark_mode': 'Dark Mode',
       'lang': 'Language',
       'logout': 'Logout',
-      'support': 'Contact Support (IG)',
+      'support': 'Contact Support',
       'math': 'Mathematics',
       'physics': 'Physics & Chemistry',
       'science': 'Life & Earth Sciences',
@@ -239,7 +268,7 @@ class S {
       'not_set': 'Exam date not set yet.',
       'set_plan': 'Set Subject Plan',
       'plan_goal': 'Study Plan:',
-      'daily_plan': 'lessons/day to finish 🚀',
+      'daily_plan': 'lessons/day 🚀',
       'completed': '✔️ Completed',
       'mark_done': 'Complete Lesson',
       'mark_undone': 'Mark Incomplete',
@@ -279,14 +308,7 @@ class S {
       'ig_error': 'Cannot open Instagram',
       'no_ans': 'No answer',
       'watch_ad': 'Watch Ad to Unlock',
-      'ad_msg':
-          'Correction paper is locked. Watch a short ad to unlock it for free.',
-      'watch': 'Watch Now',
-      'promo_title': 'Android App is Available! 🎉',
-      'promo_desc':
-          'For a faster experience, offline access, and notifications, download our official app now.',
-      'download_app': '📥 Download App',
-      'continue_web': 'Continue in Browser',
+      'ad_msg': 'Correction paper is locked. Watch a short ad to unlock it.',
     },
     'fr': {
       'app_title': 'Jaafari Guide',
@@ -303,7 +325,7 @@ class S {
       'have_acc': 'Déjà un compte? Connexion',
       'no_acc': 'Nouvel élève? S\'inscrire',
       'pass_mismatch': 'Les mots de passe ne correspondent pas!',
-      'fill_fields': 'Veuillez remplir tous les champs',
+      'fill_fields': 'Remplir les champs',
       'wrong_auth': 'Email ou mot de passe incorrect.',
       'auth_error': 'Erreur d\'authentification.',
       'subjects': 'Matières',
@@ -313,7 +335,7 @@ class S {
       'dark_mode': 'Mode sombre',
       'lang': 'Langue',
       'logout': 'Déconnexion',
-      'support': 'Contacter le support (IG)',
+      'support': 'Contacter le support',
       'math': 'Mathématiques',
       'physics': 'Physique et Chimie',
       'science': 'SVT',
@@ -322,7 +344,7 @@ class S {
       'save': 'Enregistrer',
       'cancel': 'Annuler',
       'delete': 'Supprimer',
-      'offline_msg': 'Vous êtes hors ligne.',
+      'offline_msg': 'Vous êtes hors ligne (Données en cache).',
       'welcome': 'Bienvenue',
       'student': 'Élève Ambitieux',
       'teacher': 'M. Bilal Jaafari',
@@ -334,7 +356,7 @@ class S {
       'not_set': 'Date d\'examen non fixée.',
       'set_plan': 'Planifier (Date cible)',
       'plan_goal': 'Plan d\'étude:',
-      'daily_plan': 'leçons/jour pour terminer 🚀',
+      'daily_plan': 'leçons/jour 🚀',
       'completed': '✔️ Terminé',
       'mark_done': 'Terminer la leçon',
       'mark_undone': 'Annuler',
@@ -373,15 +395,8 @@ class S {
       'success_upload': 'Téléchargé avec succès',
       'ig_error': 'Impossible d\'ouvrir Instagram',
       'no_ans': 'Aucune réponse',
-      'watch_ad': 'Regarder une pub pour débloquer',
-      'ad_msg':
-          'Le corrigé est verrouillé. Regardez une courte pub pour l\'ouvrir.',
-      'watch': 'Regarder',
-      'promo_title': 'L\'application Android est disponible! 🎉',
-      'promo_desc':
-          'Pour une expérience plus rapide et un accès hors ligne, téléchargez notre application officielle.',
-      'download_app': '📥 Télécharger l\'App',
-      'continue_web': 'Continuer sur le navigateur',
+      'watch_ad': 'Regarder pub',
+      'ad_msg': 'Le corrigé est verrouillé. Regardez une courte pub.',
     }
   };
   static String get(String key) =>
@@ -396,12 +411,8 @@ String currentUserEmailGlobal = '';
 String currentUserNameGlobal = '';
 final supabase = Supabase.instance.client;
 
-// ⚠️ رابط التطبيق الخاص بك على MediaFire أو Google Drive (قم بتغييره برابطك الحقيقي لاحقاً)
-const String APK_DOWNLOAD_LINK =
-    "https://www.mediafire.com/file/your_app_link.apk";
-
 // ==========================================
-// 4. دوال مساعدة وعارض الـ PDF
+// 4. دوال المساعدة وعارض الـ PDF
 // ==========================================
 
 Future<void> quickDelete(BuildContext context, String table, dynamic id) async {
@@ -480,7 +491,9 @@ class _InAppPdfViewerState extends State<InAppPdfViewer> {
     try {
       if (kIsWeb) {
         final response = await http.get(Uri.parse(widget.pdfUrl));
-        if (response.statusCode == 200) pdfBytes = response.bodyBytes;
+        if (response.statusCode == 200) {
+          pdfBytes = response.bodyBytes;
+        }
       } else {
         final fileInfo =
             await DefaultCacheManager().getFileFromCache(widget.pdfUrl);
@@ -543,7 +556,7 @@ class _InAppPdfViewerState extends State<InAppPdfViewer> {
 }
 
 // ==========================================
-// 5. التشغيل الأساسي
+// 5. التشغيل الأساسي والتهيئة
 // ==========================================
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -603,96 +616,10 @@ class JaafariGuideApp extends StatelessWidget {
 }
 
 // ==========================================
-// 6. التوجيه (مع النافذة الزجاجية الذكية للويب)
+// 6. التوجيه وتحديد اسم المستخدم
 // ==========================================
-class AuthWrapper extends StatefulWidget {
+class AuthWrapper extends StatelessWidget {
   const AuthWrapper({super.key});
-  @override
-  State<AuthWrapper> createState() => _AuthWrapperState();
-}
-
-class _AuthWrapperState extends State<AuthWrapper> {
-  @override
-  void initState() {
-    super.initState();
-    // ⚠️ الذكاء الاصطناعي لاكتشاف الأندرويد في الويب وعرض النافذة
-    if (kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _checkAndShowAndroidPopup();
-      });
-    }
-  }
-
-  void _checkAndShowAndroidPopup() {
-    bool hasSeenPopup = prefs.getBool('seen_android_popup') ?? false;
-    if (hasSeenPopup) return; // إذا رآها من قبل لا تزعجه
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-        child: Dialog(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          child: Container(
-            padding: const EdgeInsets.all(25),
-            decoration: BoxDecoration(
-              color: Theme.of(context).cardColor.withOpacity(0.9),
-              borderRadius: BorderRadius.circular(30),
-              border:
-                  Border.all(color: Colors.white.withOpacity(0.5), width: 1.5),
-              boxShadow: const [
-                BoxShadow(color: Colors.black26, blurRadius: 20)
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.android, size: 60, color: Colors.green),
-                const SizedBox(height: 20),
-                Text(S.get('promo_title'),
-                    style: const TextStyle(
-                        fontSize: 22, fontWeight: FontWeight.bold),
-                    textAlign: TextAlign.center),
-                const SizedBox(height: 15),
-                Text(S.get('promo_desc'),
-                    style: const TextStyle(fontSize: 16, color: Colors.grey),
-                    textAlign: TextAlign.center),
-                const SizedBox(height: 30),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.deepPurple,
-                    foregroundColor: Colors.white,
-                    minimumSize: const Size(double.infinity, 50),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(15)),
-                  ),
-                  onPressed: () {
-                    launchUrl(Uri.parse(APK_DOWNLOAD_LINK),
-                        mode: LaunchMode.externalApplication);
-                  },
-                  child: Text(S.get('download_app'),
-                      style: const TextStyle(
-                          fontSize: 18, fontWeight: FontWeight.bold)),
-                ),
-                const SizedBox(height: 10),
-                TextButton(
-                  onPressed: () {
-                    prefs.setBool('seen_android_popup', true);
-                    Navigator.pop(ctx);
-                  },
-                  child: Text(S.get('continue_web'),
-                      style: const TextStyle(fontSize: 16, color: Colors.grey)),
-                )
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<AuthState>(
@@ -743,9 +670,9 @@ class UserDataFetcher extends StatelessWidget {
             'bilal38jaafari@gmail.com');
         currentUserNameGlobal = "";
         if (snapshot.hasData && snapshot.data != null) {
-          var data = snapshot.data!;
           currentUserNameGlobal =
-              "${data['firstName'] ?? ''} ${data['lastName'] ?? ''}".trim();
+              "${snapshot.data!['firstName'] ?? ''} ${snapshot.data!['lastName'] ?? ''}"
+                  .trim();
         }
         return const MainNavigation();
       },
@@ -934,7 +861,7 @@ class _AppleGlassLoginScreenState extends State<AppleGlassLoginScreen> {
 }
 
 // ==========================================
-// 8. التنقل الرئيسي (إضافة Banner Ad بذكاء)
+// 8. التنقل الرئيسي (إضافة Banner Ad للموبايل فقط)
 // ==========================================
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
@@ -993,14 +920,12 @@ class _MainNavigationState extends State<MainNavigation> {
                     ],
                   ),
                 ),
-                // ⚠️ إعلان البانر للهاتف فقط ويأخذ مكانه بدون إخفاء الأزرار
+                // ⚠️ إعلان البانر للهاتف فقط ويأخذ مكانه بأمان دون حجب الأزرار
                 if (_isBannerAdReady && _bannerAd != null && !kIsWeb)
-                  Container(
-                    alignment: Alignment.center,
-                    width: _bannerAd!.size.width.toDouble(),
-                    height: _bannerAd!.size.height.toDouble(),
-                    child: AdWidget(ad: _bannerAd!),
-                  ),
+                  SizedBox(
+                      width: _bannerAd!.size.width.toDouble(),
+                      height: _bannerAd!.size.height.toDouble(),
+                      child: AdWidget(ad: _bannerAd!)),
               ],
             ),
             bottomNavigationBar: NavigationBar(
@@ -1020,7 +945,7 @@ class _MainNavigationState extends State<MainNavigation> {
   }
 }
 
-// ⚠️ تقليص المواد الدراسية إلى 5 مواد رئيسية فقط
+// ⚠️ المواد الـ 5 الأساسية كما طلبت
 class SubjectData {
   final String id, nameKey;
   final IconData icon;
@@ -1335,7 +1260,7 @@ class _LessonsGridPageState extends State<LessonsGridPage> {
 }
 
 // ==========================================
-// 10. صفحة الدروس والخطة (لـ 5 مواد أساسية)
+// 10. صفحة الدروس والخطة (للمواد الـ 5)
 // ==========================================
 class SubjectLessonsPage extends StatefulWidget {
   final SubjectData subject;
@@ -1563,11 +1488,7 @@ class _SubjectLessonsPageState extends State<SubjectLessonsPage> {
                                           'id': widget.subject.id,
                                           'lesson_count': currentLessonCount - 1
                                         });
-                                      } catch (e) {
-                                        ScaffoldMessenger.of(context)
-                                            .showSnackBar(SnackBar(
-                                                content: Text('Error: $e')));
-                                      }
+                                      } catch (e) {}
                                     }
                                   }),
                               Text(
@@ -1586,11 +1507,7 @@ class _SubjectLessonsPageState extends State<SubjectLessonsPage> {
                                         'id': widget.subject.id,
                                         'lesson_count': currentLessonCount + 1
                                       });
-                                    } catch (e) {
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(SnackBar(
-                                              content: Text('Error: $e')));
-                                    }
+                                    } catch (e) {}
                                   })
                             ]))
                 ],
@@ -1604,7 +1521,7 @@ class _SubjectLessonsPageState extends State<SubjectLessonsPage> {
 }
 
 // ==========================================
-// 11. محتوى الدرس (مع إعلان البيني الآمن للهاتف فقط)
+// 11. محتوى الدرس (مع إعلان 3 دقائق الآمن)
 // ==========================================
 class LessonContentPage extends StatefulWidget {
   final String lessonId, title, subjectId;
@@ -1632,7 +1549,7 @@ class _LessonContentPageState extends State<LessonContentPage> {
         .contains(widget.lessonId);
   }
 
-  // ⚠️ إظهار الإعلان عند الخروج من الدرس إذا مرت 5 دقائق
+  // ⚠️ الإعلان يظهر عند خروج التلميذ من الدرس بعد 3 دقائق
   @override
   void dispose() {
     AdManager.checkAndShowTimerAd();
@@ -1832,7 +1749,7 @@ class _LessonContentPageState extends State<LessonContentPage> {
 }
 
 // ==========================================
-// 12. واجهة الاختبارات (مع إعلان مكافأة للتصحيح)
+// 12. واجهة الاختبارات (مع المكافأة للموبايل فقط)
 // ==========================================
 class QuizzesGridPage extends StatelessWidget {
   const QuizzesGridPage({super.key});
@@ -1905,10 +1822,7 @@ class _SubjectQuizzesListPageState extends State<SubjectQuizzesListPage> {
                               'subjectId': widget.subject.id,
                               'custom_title': ctrl.text
                             });
-                          } catch (e) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('Error: $e')));
-                          }
+                          } catch (e) {}
                         }
                         if (mounted) Navigator.pop(context);
                       },
@@ -2147,10 +2061,7 @@ class _QuizPlayAreaState extends State<QuizPlayArea> {
                                   'created_at': DateTime.now().toIso8601String()
                                 });
                                 if (mounted) Navigator.pop(c);
-                              } catch (e) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text('Error: $e')));
-                              }
+                              } catch (e) {}
                             }
                           },
                           child: Text(S.get('save')))
@@ -2192,47 +2103,60 @@ class _QuizPlayAreaState extends State<QuizPlayArea> {
                           icon: const Icon(Icons.delete, color: Colors.red),
                           onPressed: () => quickDelete(
                               context, 'lesson_contents', files[i]['id']))
-                      : (isCorrection
+                      : (isCorrection && !kIsWeb
                           ? const Icon(Icons.lock, color: Colors.orange)
                           : null),
                   onTap: () {
-                    // ⚠️ في الويب نفتح التصحيح مباشرة دون إزعاج. في الهاتف نطلب إعلاناً
-                    if (!isTeacherGlobal && isCorrection && !kIsWeb) {
-                      showDialog(
-                          context: context,
-                          builder: (dCtx) => AlertDialog(
-                                  title: Text(S.get('watch_ad')),
-                                  content: Text(S.get('ad_msg')),
-                                  actions: [
-                                    TextButton(
-                                        onPressed: () => Navigator.pop(dCtx),
-                                        child: Text(S.get('cancel'))),
-                                    ElevatedButton(
-                                        onPressed: () {
-                                          Navigator.pop(dCtx);
-                                          AdManager.showRewardedAd(() {
-                                            if (isPdf)
-                                              Navigator.push(
-                                                  context,
-                                                  MaterialPageRoute(
-                                                      builder: (_) =>
-                                                          InAppPdfViewer(
-                                                              pdfUrl: files[i]
-                                                                  ['data'],
-                                                              title:
-                                                                  sectionTitle,
-                                                              color: widget
-                                                                  .color)));
-                                            else
-                                              showFullScreenImage(
-                                                  context, files[i]['data']);
-                                          });
-                                        },
-                                        style: ElevatedButton.styleFrom(
-                                            backgroundColor: widget.color,
-                                            foregroundColor: Colors.white),
-                                        child: Text(S.get('watch')))
-                                  ]));
+                    // ⚠️ نظام الإعلانات الذكي: الويب يفتح مباشرة بسلاسة، والهاتف يطلب مشاهدة الإعلان
+                    if (!isTeacherGlobal && isCorrection) {
+                      if (kIsWeb) {
+                        if (isPdf)
+                          Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (_) => InAppPdfViewer(
+                                      pdfUrl: files[i]['data'],
+                                      title: sectionTitle,
+                                      color: widget.color)));
+                        else
+                          showFullScreenImage(context, files[i]['data']);
+                      } else {
+                        showDialog(
+                            context: context,
+                            builder: (dCtx) => AlertDialog(
+                                    title: Text(S.get('watch_ad')),
+                                    content: Text(S.get('ad_msg')),
+                                    actions: [
+                                      TextButton(
+                                          onPressed: () => Navigator.pop(dCtx),
+                                          child: Text(S.get('cancel'))),
+                                      ElevatedButton(
+                                          onPressed: () {
+                                            Navigator.pop(dCtx);
+                                            AdManager.showRewardedAd(() {
+                                              if (isPdf)
+                                                Navigator.push(
+                                                    context,
+                                                    MaterialPageRoute(
+                                                        builder: (_) =>
+                                                            InAppPdfViewer(
+                                                                pdfUrl: files[i]
+                                                                    ['data'],
+                                                                title:
+                                                                    sectionTitle,
+                                                                color: widget
+                                                                    .color)));
+                                              else
+                                                showFullScreenImage(
+                                                    context, files[i]['data']);
+                                            });
+                                          },
+                                          style: ElevatedButton.styleFrom(
+                                              backgroundColor: widget.color,
+                                              foregroundColor: Colors.white),
+                                          child: Text(S.get('watch')))
+                                    ]));
+                      }
                     } else {
                       if (isPdf)
                         Navigator.push(
@@ -2579,7 +2503,7 @@ class _InteractiveQuizScreenState extends State<InteractiveQuizScreen> {
 }
 
 // ==========================================
-// 13. الملف الشخصي وتعدد اللغات
+// 13. الملف الشخصي وتعدد اللغات الفوري
 // ==========================================
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -2597,11 +2521,7 @@ class _ProfilePageState extends State<ProfilePage> {
     final Uri url = Uri.parse('https://www.instagram.com/j._.billal');
     try {
       await launchUrl(url, mode: LaunchMode.externalApplication);
-    } catch (e) {
-      if (mounted)
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(S.get('ig_error'))));
-    }
+    } catch (e) {}
   }
 
   @override
